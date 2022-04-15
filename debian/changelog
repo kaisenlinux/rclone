@@ -1,0 +1,5 @@
+rclone (1.58.0-1kaisen) kaisen-packages; urgency=medium
+
+  * First packaging for Kaisen Linux
+
+ -- Kevin Chevreuil - Kaisen <kaisen@kaisenlinux.org>  Fri, 15 Apr 2022 13:22:45 +0200

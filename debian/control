@@ -1,0 +1,19 @@
+Source: rclone
+Section: net
+Priority: optional
+Maintainer: Kevin Chevreuil - Kaisen <kaisen@kaisenlinux.org>
+Build-Depends: debhelper-compat (= 13), golang-go (>= 1.17), dh-golang,
+Standards-Version: 4.6.0
+Homepage: https://rclone.org/
+Vcs-Browser: https://gitlab.com/kaisenlinux/packages/rclone
+Vcs-Git: https://gitlab.com/kaisenlinux/packages/rclone.git
+Rules-Requires-Root: no
+
+Package: rclone
+Architecture: amd64 arm64 i386
+Depends: ${shlibs:Depends}, ${misc:Depends}, golang-go (>= 1.17)
+Suggests: restic
+Description: Rclone - "rsync for cloud storage"
+   is a command-line program to sync files and directories to and
+   from most cloud providers. It can also mount, tree, ncdu and lots
+   of other useful things.

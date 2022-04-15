@@ -1,0 +1,19 @@
+#!/usr/bin/make -f
+
+export GOPATH=$(CURDIR)/obj-x86_64-linux-gnu
+export GOBIN=$(CURDIR)/obj-x86_64-linux-gnu/bin
+
+%:
+	dh $@ --buildsystem=golang
+
+override_dh_auto_build:
+	go get
+	go build
+	$(CURDIR)/rclone completion bash > $(CURDIR)/obj-x86_64-linux-gnu/rclone
+	$(CURDIR)/rclone completion zsh > $(CURDIR)/obj-x86_64-linux-gnu/_rclone
+
+override_dh_auto_test:
+	go test
+
+override_dh_auto_install:
+	dh_auto_install -- --no-source

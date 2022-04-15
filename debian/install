@@ -1,0 +1,4 @@
+debian/rclone.png usr/share/pixmaps/
+obj-x86_64-linux-gnu/rclone usr/share/bash-completion/completions/
+obj-x86_64-linux-gnu/_rclone usr/share/zsh/vendor-completions/
+rclone usr/bin/
