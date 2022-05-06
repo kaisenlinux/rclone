@@ -1,3 +1,12 @@
+rclone (1.58.1-1kaisen) kaisen-packages; urgency=medium
+
+  * Import 1.58.1 version
+  * Improvements of the packaging
+  * Adding more documentation about rclone
+  * Adding quilt patch to remove the suffix version
+
+ -- Kevin Chevreuil - Kaisen <kaisen@kaisenlinux.org>  Fri, 06 May 2022 11:17:27 +0100
+
 rclone (1.58.0-1kaisen) kaisen-packages; urgency=medium
 
   * First packaging for Kaisen Linux

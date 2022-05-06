@@ -7,8 +7,9 @@ export GOBIN=$(CURDIR)/obj-x86_64-linux-gnu/bin
 	dh $@ --buildsystem=golang
 
 override_dh_auto_build:
-	go get
-	go build
+	make version
+	make doc
+	make rclone
 	$(CURDIR)/rclone completion bash > $(CURDIR)/obj-x86_64-linux-gnu/rclone
 	$(CURDIR)/rclone completion zsh > $(CURDIR)/obj-x86_64-linux-gnu/_rclone
 
