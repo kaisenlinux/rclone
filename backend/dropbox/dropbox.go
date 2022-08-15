@@ -472,9 +472,11 @@ func NewFs(ctx context.Context, name, root string, m configmap.Mapper) (fs.Fs, e
 		args := team.NewMembersGetInfoArgs(members)
 
 		memberIds, err := f.team.MembersGetInfo(args)
-
 		if err != nil {
 			return nil, fmt.Errorf("invalid dropbox team member: %q: %w", opt.Impersonate, err)
+		}
+		if len(memberIds) == 0 || memberIds[0].MemberInfo == nil || memberIds[0].MemberInfo.Profile == nil {
+			return nil, fmt.Errorf("dropbox team member not found: %q", opt.Impersonate)
 		}
 
 		cfg.AsMemberID = memberIds[0].MemberInfo.Profile.MemberProfile.TeamMemberId
@@ -1197,7 +1199,7 @@ func (f *Fs) PublicLink(ctx context.Context, remote string, expire fs.Duration, 
 			return
 		}
 		if len(listRes.Links) == 0 {
-			err = errors.New("Dropbox says the sharing link already exists, but list came back empty")
+			err = errors.New("sharing link already exists, but list came back empty")
 			return
 		}
 		linkRes = listRes.Links[0]
@@ -1209,7 +1211,7 @@ func (f *Fs) PublicLink(ctx context.Context, remote string, expire fs.Duration, 
 		case *sharing.FolderLinkMetadata:
 			link = res.Url
 		default:
-			err = fmt.Errorf("Don't know how to extract link, response has unknown format: %T", res)
+			err = fmt.Errorf("don't know how to extract link, response has unknown format: %T", res)
 		}
 	}
 	return
@@ -1269,7 +1271,7 @@ func (f *Fs) About(ctx context.Context) (usage *fs.Usage, err error) {
 		return shouldRetry(ctx, err)
 	})
 	if err != nil {
-		return nil, fmt.Errorf("about failed: %w", err)
+		return nil, err
 	}
 	var total uint64
 	if q.Allocation != nil {
@@ -1370,10 +1372,12 @@ func (f *Fs) changeNotifyRunner(ctx context.Context, notifyFunc func(string, fs.
 
 	if timeout < 30 {
 		timeout = 30
+		fs.Debugf(f, "Increasing poll interval to minimum 30s")
 	}
 
 	if timeout > 480 {
 		timeout = 480
+		fs.Debugf(f, "Decreasing poll interval to maximum 480s")
 	}
 
 	err = f.pacer.Call(func() (bool, error) {
@@ -1431,7 +1435,7 @@ func (f *Fs) changeNotifyRunner(ctx context.Context, notifyFunc func(string, fs.
 			}
 
 			if entryPath != "" {
-				notifyFunc(entryPath, entryType)
+				notifyFunc(f.opt.Enc.ToStandardPath(entryPath), entryType)
 			}
 		}
 		if !changeList.HasMore {
@@ -1693,6 +1697,9 @@ func (o *Object) uploadChunked(ctx context.Context, in0 io.Reader, commitInfo *f
 		if size > 0 {
 			// if size is known, check if next chunk is final
 			appendArg.Close = uint64(size)-in.BytesRead() <= uint64(chunkSize)
+			if in.BytesRead() > uint64(size) {
+				return nil, fmt.Errorf("expected %d bytes in input, but have read %d so far", size, in.BytesRead())
+			}
 		} else {
 			// if size is unknown, upload as long as we can read full chunks from the reader
 			appendArg.Close = in.BytesRead()-cursor.Offset < uint64(chunkSize)
@@ -1784,7 +1791,7 @@ func (o *Object) Update(ctx context.Context, in io.Reader, src fs.ObjectInfo, op
 		entry, err = o.uploadChunked(ctx, in, commitInfo, size)
 	} else {
 		err = o.fs.pacer.CallNoRetry(func() (bool, error) {
-			entry, err = o.fs.srv.Upload(commitInfo, in)
+			entry, err = o.fs.srv.Upload(&files.UploadArg{CommitInfo: *commitInfo}, in)
 			return shouldRetry(ctx, err)
 		})
 	}

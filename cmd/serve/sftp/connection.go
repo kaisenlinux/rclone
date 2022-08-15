@@ -43,7 +43,7 @@ var shellUnEscapeRegex = regexp.MustCompile(`\\(.)`)
 
 // Unescape a string that was escaped by rclone
 func shellUnEscape(str string) string {
-	str = strings.Replace(str, "'\n'", "\n", -1)
+	str = strings.ReplaceAll(str, "'\n'", "\n")
 	str = shellUnEscapeRegex.ReplaceAllString(str, `$1`)
 	return str
 }
@@ -74,7 +74,7 @@ func (c *conn) execCommand(ctx context.Context, out io.Writer, command string) (
 		}
 		usage, err := about(ctx)
 		if err != nil {
-			return fmt.Errorf("About failed: %w", err)
+			return fmt.Errorf("about failed: %w", err)
 		}
 		total, used, free := int64(-1), int64(-1), int64(-1)
 		if usage.Total != nil {
@@ -100,6 +100,9 @@ func (c *conn) execCommand(ctx context.Context, out io.Writer, command string) (
 		ht := hash.MD5
 		if binary == "sha1sum" {
 			ht = hash.SHA1
+		}
+		if !c.vfs.Fs().Hashes().Contains(ht) {
+			return fmt.Errorf("%v hash not supported", ht)
 		}
 		var hashSum string
 		if args == "" {
