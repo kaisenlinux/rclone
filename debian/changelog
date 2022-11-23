@@ -1,3 +1,9 @@
+rclone (1.60.1-1kaisen) kaisen-packages; urgency=medium
+
+  * Import 1.60.1 version
+
+ -- Kevin Chevreuil - Kaisen <kaisen@kaisenlinux.org>  Wed, 23 Nov 2022 20:49:24 +0100
+
 rclone (1.59.2-1kaisen) kaisen-packages; urgency=medium
 
   * Import 1.59.2 version
