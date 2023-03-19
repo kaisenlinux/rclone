@@ -231,6 +231,7 @@ put them back in again.` >}}
   * Jay <dev@jaygoel.com>
   * andrea rota <a@xelera.eu>
   * nicolov <nicolov@users.noreply.github.com>
+  * Matt Joiner <anacrolix@gmail.com>
   * Dario Guzik <dario@guzik.com.ar>
   * qip <qip@users.noreply.github.com>
   * yair@unicorn <yair@unicorn>
@@ -650,3 +651,47 @@ put them back in again.` >}}
   * Manoj Ghosh <manoj.ghosh@oracle.com>
   * Tom Mombourquette <tom@devnode.com>
   * Robert Newson <rnewson@apache.org>
+  * Samuel Johnson <esamueljohnson@gmail.com>
+  * coultonluke <luke@luke.org.uk>
+  * Anthony Pessy <anthony@cogniteev.com>
+  * Philip Harvey <pharvey@battelleecology.org>
+  * dgouju <dgouju@users.noreply.github.com>
+  * Clément Notin <clement.notin@gmail.com>
+  * x3-apptech <66947598+x3-apptech@users.noreply.github.com>
+  * Arnie97 <arnie97@gmail.com>
+  * Roel Arents <2691308+roelarents@users.noreply.github.com>
+  * Aaron Gokaslan <aaronGokaslan@gmail.com>
+  * techknowlogick <matti@mdranta.net>
+  * rkettelerij <richard@mindloops.nl>
+  * Kamui <fin-kamui@pm.me>
+  * asdffdsazqqq <90116442+asdffdsazqqq@users.noreply.github.com>
+  * Nathaniel Wesley Filardo <nfilardo@microsoft.com>
+  * ycdtosa <ycdtosa@users.noreply.github.com>
+  * Erik Agterdenbos <agterdenbos@users.noreply.github.com>
+  * Kevin Verstaen <48050031+kverstae@users.noreply.github.com>
+  * MohammadReza <mrvashian@gmail.com>
+  * vanplus <60313789+vanplus@users.noreply.github.com>
+  * Jack <16779171+jkpe@users.noreply.github.com>
+  * Abdullah Saglam <abdullah.saglam@stonebranch.com>
+  * Marks Polakovs <github@markspolakovs.me>
+  * piyushgarg <piyushgarg80@gmail.com>
+  * Kaloyan Raev <kaloyan-raev@users.noreply.github.com>
+  * IMTheNachoMan <imthenachoman@gmail.com>
+  * alankrit <alankrit@google.com>
+  * Bryan Kaplan <#@bryankaplan.com>
+  * LXY <767763591@qq.com>
+  * Simmon Li (he/him) <li.simmon@gmail.com>
+  * happyxhw <44490504+happyxhw@users.noreply.github.com>
+  * Simmon Li (he/him) <hello@crespire.dev>
+  * Matthias Baur <baurmatt@users.noreply.github.com>
+  * Hunter Wittenborn <hunter@hunterwittenborn.com>
+  * logopk <peter@kreuser.name>
+  * Gerard Bosch <30733556+gerardbosch@users.noreply.github.com>
+  * ToBeFree <github@tfrei.de>
+  * NodudeWasTaken <75137537+NodudeWasTaken@users.noreply.github.com>
+  * Peter Brunner <peter@lugoues.net>
+  * Ninh Pham <dongian.rapclubkhtn@gmail.com>
+  * Ryan Caezar Itang <sitiom@proton.me>
+  * Peter Brunner <peter@psykhe.com>
+  * Leandro Sacchet <leandro.sacchet@animati.com.br>
+  * dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>

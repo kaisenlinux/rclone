@@ -61,6 +61,17 @@ func init() {
 			Help:    "Domain name for NTLM authentication.",
 			Default: "WORKGROUP",
 		}, {
+			Name: "spn",
+			Help: `Service principal name.
+
+Rclone presents this name to the server. Some servers use this as further
+authentication, and it often needs to be set for clusters. For example:
+
+    cifs/remotehost:1020
+
+Leave blank if not sure.
+`,
+		}, {
 			Name:    "idle_timeout",
 			Default: fs.Duration(60 * time.Second),
 			Help: `Max time before closing idle connections.
@@ -109,6 +120,7 @@ type Options struct {
 	User            string      `config:"user"`
 	Pass            string      `config:"pass"`
 	Domain          string      `config:"domain"`
+	SPN             string      `config:"spn"`
 	HideSpecial     bool        `config:"hide_special_share"`
 	CaseInsensitive bool        `config:"case_insensitive"`
 	IdleTimeout     fs.Duration `config:"idle_timeout"`
@@ -478,11 +490,15 @@ func (f *Fs) makeEntryRelative(share, _path, relative string, stat os.FileInfo) 
 }
 
 func (f *Fs) ensureDirectory(ctx context.Context, share, _path string) error {
+	dir := path.Dir(_path)
+	if dir == "." {
+		return nil
+	}
 	cn, err := f.getConnection(ctx, share)
 	if err != nil {
 		return err
 	}
-	err = cn.smbShare.MkdirAll(f.toSambaPath(path.Dir(_path)), 0o755)
+	err = cn.smbShare.MkdirAll(f.toSambaPath(dir), 0o755)
 	f.putConnection(&cn)
 	return err
 }

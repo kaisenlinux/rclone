@@ -1,9 +1,10 @@
 ---
 title: "Crypt"
 description: "Encryption overlay remote"
+versionIntroduced: "v1.33"
 ---
 
-# {{< icon "fa fa-lock" >}}Crypt
+# {{< icon "fa fa-lock" >}} Crypt
 
 Rclone `crypt` remotes encrypt and decrypt other remotes.
 
@@ -57,7 +58,7 @@ custom salt is effectively a second password that must be memorized.
 based on XSalsa20 cipher and Poly1305 for integrity.
 [Names](#name-encryption) (file- and directory names) are also encrypted
 by default, but this has some implications and is therefore
-possible to turned off.
+possible to be turned off.
 
 ## Configuration
 
@@ -659,7 +660,7 @@ as `eremote:`.
 
 To sync the two remotes you would do
 
-    rclone sync -i remote:crypt remote2:crypt
+    rclone sync --interactive remote:crypt remote2:crypt
 
 And to check the integrity you would do
 

@@ -5,6 +5,245 @@ description: "Rclone Changelog"
 
 # Changelog
 
+## v1.62.2 - 2023-03-16
+
+[See commits](https://github.com/rclone/rclone/compare/v1.62.1...v1.62.2)
+
+* Bug Fixes
+    * docker volume plugin: Add missing fuse3 dependency (Nick Craig-Wood)
+    * docs: Fix size documentation (asdffdsazqqq)
+* FTP
+    * Fix 426 errors on downloads with vsftpd (Lesmiscore)
+
+## v1.62.1 - 2023-03-15
+
+[See commits](https://github.com/rclone/rclone/compare/v1.62.0...v1.62.1)
+
+* Bug Fixes
+    * docker: Add missing fuse3 dependency (cycneuramus)
+    * build: Update release docs to be more careful with the tag (Nick Craig-Wood)
+    * build: Set Github release to draft while uploading binaries (Nick Craig-Wood)
+
+## v1.62.0 - 2023-03-14
+
+[See commits](https://github.com/rclone/rclone/compare/v1.61.0...v1.62.0)
+
+* New Features
+    * accounting: Make checkers show what they are doing (Nick Craig-Wood)
+    * authorize: Add support for custom templates (Hunter Wittenborn)
+    * build
+        * Update to go1.20 (Nick Craig-Wood, Anagh Kumar Baranwal)
+        * Add winget releaser workflow (Ryan Caezar Itang)
+        * Add dependabot (Ryan Caezar Itang)
+    * doc updates (albertony, Bryan Kaplan, Gerard Bosch, IMTheNachoMan, Justin Winokur, Manoj Ghosh, Nick Craig-Wood, Ole Frost, Peter Brunner, piyushgarg, Ryan Caezar Itang, Simmon Li, ToBeFree)
+    * filter: Emit INFO message when can't work out directory filters (Nick Craig-Wood)
+    * fs
+        * Added multiple ca certificate support. (alankrit)
+        * Add `--max-delete-size` a delete size threshold (Leandro Sacchet)
+    * fspath: Allow the symbols `@` and `+` in remote names (albertony)
+    * lib/terminal: Enable windows console virtual terminal sequences processing (ANSI/VT100 colors) (albertony)
+    * move: If `--check-first` and `--order-by` are set then delete with perfect ordering (Nick Craig-Wood)
+    * serve http: Support `--auth-proxy` (Matthias Baur)
+* Bug Fixes
+    * accounting
+        * Avoid negative ETA values for very slow speeds (albertony)
+        * Limit length of ETA string (albertony)
+        * Show human readable elapsed time when longer than a day (albertony)
+    * all: Apply codeql fixes (Aaron Gokaslan)
+    * build
+        * Fix condition for manual workflow run (albertony)
+        * Fix building for ARMv5 and ARMv6 (albertony)
+            * selfupdate: Consider ARM version
+            * install.sh: fix ARMv6 download
+            * version: Report ARM version
+    * deletefile: Return error code 4 if file does not exist (Nick Craig-Wood)
+    * docker: Fix volume plugin does not remount volume on docker restart (logopk)
+    * fs: Fix race conditions in `--max-delete` and `--max-delete-size` (Nick Craig-Wood)
+    * lib/oauthutil: Handle fatal errors better (Alex Chen)
+    * mount2: Fix `--allow-non-empty` (Nick Craig-Wood)
+    * operations: Fix concurrency: use `--checkers` unless transferring files (Nick Craig-Wood)
+    * serve ftp: Fix timestamps older than 1 year in listings (Nick Craig-Wood)
+    * sync: Fix concurrency: use `--checkers` unless transferring files (Nick Craig-Wood)
+    * tree
+        * Fix nil pointer exception on stat failure (Nick Craig-Wood)
+        * Fix colored output on windows (albertony)
+        * Fix display of files with illegal Windows file system names (Nick Craig-Wood)
+* Mount
+    * Fix creating and renaming files on case insensitive backends (Nick Craig-Wood)
+    * Do not treat `\\?\` prefixed paths as network share paths on windows (albertony)
+    * Fix check for empty mount point on Linux (Nick Craig-Wood)
+    * Fix `--allow-non-empty` (Nick Craig-Wood)
+    * Avoid incorrect or premature overlap check on windows (albertony)
+    * Update to fuse3 after bazil.org/fuse update (Nick Craig-Wood)
+* VFS
+    * Make uploaded files retain modtime with non-modtime backends (Nick Craig-Wood)
+    * Fix incorrect modtime on fs which don't support setting modtime (Nick Craig-Wood)
+    * Fix rename of directory containing files to be uploaded (Nick Craig-Wood)
+* Local
+    * Fix `%!w(<nil>)` in "failed to read directory" error (Marks Polakovs)
+    * Fix exclusion of dangling symlinks with -L/--copy-links (Nick Craig-Wood)
+* Crypt
+    * Obey `--ignore-checksum` (Nick Craig-Wood)
+    * Fix for unencrypted directory names on case insensitive remotes (Ole Frost)
+* Azure Blob
+    * Remove workarounds for SDK bugs after v0.6.1 update (Nick Craig-Wood)
+* B2
+    * Fix uploading files bigger than 1TiB (Nick Craig-Wood)
+* Drive
+    * Note that `--drive-acknowledge-abuse` needs SA Manager permission (Nick Craig-Wood)
+    * Make `--drive-stop-on-upload-limit` to respond to storageQuotaExceeded (Ninh Pham)
+* FTP
+    * Retry 426 errors (Nick Craig-Wood)
+    * Retry errors when initiating downloads (Nick Craig-Wood)
+    * Revert to upstream `github.com/jlaffaye/ftp` now fix is merged (Nick Craig-Wood)
+* Google Cloud Storage
+    * Add `--gcs-env-auth` to pick up IAM credentials from env/instance (Peter Brunner)
+* Mega
+    * Add `--mega-use-https` flag (NodudeWasTaken)
+* Onedrive
+    * Default onedrive personal to QuickXorHash as Microsoft is removing SHA1 (Nick Craig-Wood)
+    * Add `--onedrive-hash-type` to change the hash in use (Nick Craig-Wood)
+    * Improve speed of QuickXorHash (LXY)
+* Oracle Object Storage
+    * Speed up operations by using S3 pacer and setting minsleep to 10ms (Manoj Ghosh)
+    * Expose the `storage_tier` option in config (Manoj Ghosh)
+    * Bring your own encryption keys (Manoj Ghosh)
+* S3
+    * Check multipart upload ETag when `--s3-no-head` is in use (Nick Craig-Wood)
+    * Add `--s3-sts-endpoint` to specify STS endpoint (Nick Craig-Wood)
+    * Fix incorrect tier support for StorJ and IDrive when pointing at a file (Ole Frost)
+    * Fix AWS STS failing if `--s3-endpoint` is set (Nick Craig-Wood)
+    * Make purge remove directory markers too (Nick Craig-Wood)
+* Seafile
+    * Renew library password (Fred)
+* SFTP
+    * Fix uploads being 65% slower than they should be with crypt (Nick Craig-Wood)
+* Smb
+    * Allow SPN (service principal name) to be configured (Nick Craig-Wood)
+    * Check smb connection is closed (happyxhw)
+* Storj
+    * Implement `rclone link` (Kaloyan Raev)
+    * Implement `rclone purge` (Kaloyan Raev)
+    * Update satellite urls and labels (Kaloyan Raev)
+* WebDAV
+    * Fix interop with davrods server (Nick Craig-Wood)
+
+## v1.61.1 - 2022-12-23
+
+[See commits](https://github.com/rclone/rclone/compare/v1.61.0...v1.61.1)
+
+* Bug Fixes
+    * docs:
+        * Show only significant parts of version number in version introduced label (albertony)
+        * Fix unescaped HTML (Nick Craig-Wood)
+    * lib/http: Shutdown all servers on exit to remove unix socket (Nick Craig-Wood)
+    * rc: Fix `--rc-addr` flag (which is an alternate for `--url`) (Anagh Kumar Baranwal)
+    * serve restic
+        * Don't serve via http if serving via `--stdio` (Nick Craig-Wood)
+        * Fix immediate exit when not using stdio (Nick Craig-Wood)
+    * serve webdav
+        * Fix `--baseurl` handling after `lib/http` refactor (Nick Craig-Wood)
+        * Fix running duplicate Serve call (Nick Craig-Wood)
+* Azure Blob
+    * Fix "409 Public access is not permitted on this storage account" (Nick Craig-Wood)
+* S3
+    * storj: Update endpoints (Kaloyan Raev)
+
+## v1.61.0 - 2022-12-20
+
+[See commits](https://github.com/rclone/rclone/compare/v1.60.0...v1.61.0)
+
+* New backends
+    * New S3 providers
+        * [Liara LOS](/s3/#liara-cloud) (MohammadReza)
+* New Features
+    * build: Add vulnerability testing using govulncheck (albertony)
+    * cmd: Enable `SIGINFO` (Ctrl-T) handler on FreeBSD, NetBSD, OpenBSD and Dragonfly BSD (x3-apptech)
+    * config: Add [config/setpath](/rc/#config-setpath) for setting config path via rc/librclone (Nick Craig-Wood)
+    * dedupe
+        * Count Checks in the stats while scanning for duplicates (Nick Craig-Wood)
+        * Make dedupe obey the filters (Nick Craig-Wood)
+    * dlna: Properly attribute code used from https://github.com/anacrolix/dms (Nick Craig-Wood)
+    * docs
+        * Add minimum versions and status badges to backend and command docs (Nick Craig-Wood, albertony)
+        * Remote names may not start or end with space (albertony)
+    * filter: Add metadata filters [--metadata-include/exclude/filter](/filtering/#metadata) and friends (Nick Craig-Wood)
+    * fs
+        * Make all duration flags take `y`, `M`, `w`, `d` etc suffixes (Nick Craig-Wood)
+        * Add global flag `--color` to control terminal colors (Kevin Verstaen)
+    * fspath: Allow unicode numbers and letters in remote names (albertony)
+    * lib/file: Improve error message for creating dir on non-existent network host on windows (albertony)
+    * lib/http: Finish port of rclone servers to `lib/http` (Tom Mombourquette, Nick Craig-Wood)
+    * lib/oauthutil: Improved usability of config flows needing web browser (Ole Frost)
+    * ncdu
+        * Add support for modification time (albertony)
+        * Fallback to sort by name also for sort by average size (albertony)
+        * Rework to use tcell directly instead of the termbox wrapper (eNV25)
+    * rc: Add commands to set [GC Percent](/rc/#debug-set-gc-percent) & [Memory Limit](/rc/#debug-set-soft-memory-limit) (go 1.19+) (Anagh Kumar Baranwal)
+    * rcat: Preserve metadata when Copy falls back to Rcat (Nick Craig-Wood)
+    * rcd: Refactor rclone rc server to use `lib/http` (Nick Craig-Wood)
+    * rcserver: Avoid generating default credentials with htpasswd (Kamui)
+    * restic: Refactor to use `lib/http` (Nolan Woods)
+    * serve http: Support unix sockets and multiple listeners (Tom Mombourquette)
+    * serve webdav: Refactor to use `lib/http` (Nick Craig-Wood)
+    * test: Replace defer cleanup with `t.Cleanup` (Eng Zer Jun)
+    * test memory: Read metadata if `-M` flag is specified (Nick Craig-Wood)
+    * wasm: Comply with `wasm_exec.js` licence terms (Matthew Vernon)
+* Bug Fixes
+    * build: Update `golang.org/x/net/http2` to fix GO-2022-1144 (Nick Craig-Wood)
+    * restic: Fix typo in docs 'remove' should be 'remote' (asdffdsazqqq)
+    * serve dlna: Fix panic: Logger uninitialized. (Nick Craig-Wood)
+* Mount
+    * Update cgofuse for FUSE-T support for mounting volumes on Mac (Nick Craig-Wood)
+* VFS
+    * Windows: fix slow opening of exe files by not truncating files when not necessary (Nick Craig-Wood)
+    * Fix IO Error opening a file with `O_CREATE|O_RDONLY` in `--vfs-cache-mode` not full (Nick Craig-Wood)
+* Crypt
+    * Fix compress wrapping crypt giving upload errors (Nick Craig-Wood)
+* Azure Blob
+    * Port to new SDK (Nick Craig-Wood)
+        * Revamp authentication to include all methods and docs (Nick Craig-Wood)
+        * Port old authentication methods to new SDK (Nick Craig-Wood, Brad Ackerman)
+        * Thanks to [Stonebranch](https://www.stonebranch.com/) for sponsoring this work.
+    * Add `--azureblob-no-check-container` to assume container exists (Nick Craig-Wood)
+    * Add `--use-server-modtime` support (Abdullah Saglam)
+    * Add support for custom upload headers (rkettelerij)
+    * Allow emulator account/key override (Roel Arents)
+    * Support simple "environment credentials" (Nathaniel Wesley Filardo)
+    * Ignore `AuthorizationFailure` when trying to create a create a container (Nick Craig-Wood)
+* Box
+    * Added note on Box API rate limits (Ole Frost)
+* Drive
+    * Handle shared drives with leading/trailing space in name (related to) (albertony)
+* FTP
+    * Update help text of implicit/explicit TLS options to refer to FTPS instead of FTP (ycdtosa)
+    * Improve performance to speed up `--files-from` and `NewObject` (Anthony Pessy)
+* HTTP
+    * Parse GET responses when `no_head` is set (Arnie97)
+    * Do not update object size based on `Range` requests (Arnie97)
+    * Support `Content-Range` response header (Arnie97)
+* Onedrive
+    * Document workaround for shared with me files (vanplus)
+* S3
+    * Add Liara LOS to provider list (MohammadReza)
+    * Add DigitalOcean Spaces regions `sfo3`, `fra1`, `syd1` (Jack)
+    * Avoid privileged `GetBucketLocation` to resolve s3 region (Anthony Pessy)
+    * Stop setting object and bucket ACL to `private` if it is an empty string (Philip Harvey)
+    * If bucket or object ACL is empty string then don't add `X-Amz-Acl:` header (Nick Craig-Wood)
+    * Reduce memory consumption for s3 objects (Erik Agterdenbos)
+    * Fix listing loop when using v2 listing on v1 server (Nick Craig-Wood)
+    * Fix nil pointer exception when using Versions (Nick Craig-Wood)
+    * Fix excess memory usage when using versions (Nick Craig-Wood)
+    * Ignore versionIDs from uploads unless using `--s3-versions` or `--s3-versions-at` (Nick Craig-Wood)
+* SFTP
+    * Add configuration options to set ssh Ciphers / MACs / KeyExchange (dgouju)
+    * Auto-detect shell type for fish (albertony)
+    * Fix NewObject with leading / (Nick Craig-Wood)
+* Smb
+    * Fix issue where spurious dot directory is created (albertony)
+* Storj
+    * Implement server side Copy (Kaloyan Raev)
+
 ## v1.60.1 - 2022-11-17
 
 [See commits](https://github.com/rclone/rclone/compare/v1.60.0...v1.60.1)

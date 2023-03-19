@@ -7,17 +7,18 @@ export GOBIN=$(CURDIR)/_build/bin
 	dh $@ --buildsystem=golang
 
 override_dh_auto_clean:
-	rm -rf $(CURDIR)/_build/
+	rm -rf $(CURDIR)/_build/ $(CURDIR)/obj-x86_64-linux-gnu
 
 override_dh_auto_build:
 	make version
 	make doc
 	make rclone
-	$(CURDIR)/rclone completion bash > $(CURDIR)/obj-x86_64-linux-gnu/rclone
-	$(CURDIR)/rclone completion zsh > $(CURDIR)/obj-x86_64-linux-gnu/_rclone
 
 override_dh_auto_test:
 	go test
 
 override_dh_auto_install:
-	dh_auto_install -- --no-source
+	install -p -m 0755 $(CURDIR)/rclone $(CURDIR)/debian/rclone/usr/bin/
+	install -p -m 0644 $(CURDIR)/debian/rclone.png $(CURDIR)/debian/rclone/usr/share/pixmaps/
+	$(CURDIR)/rclone completion bash > $(CURDIR)/debian/rclone/usr/share/bash-completion/completions/rclone
+	$(CURDIR)/rclone completion zsh > $(CURDIR)/debian/rclone/usr/share/zsh/vendor-completions/_rclone

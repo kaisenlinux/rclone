@@ -11,7 +11,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"mime"
 	"net/http"
 	"os"
@@ -298,74 +297,6 @@ func removeFailedCopy(ctx context.Context, dst fs.Object) bool {
 	return true
 }
 
-// OverrideRemote is a wrapper to override the Remote for an
-// ObjectInfo
-type OverrideRemote struct {
-	fs.ObjectInfo
-	remote string
-}
-
-// NewOverrideRemote returns an OverrideRemoteObject which will
-// return the remote specified
-func NewOverrideRemote(oi fs.ObjectInfo, remote string) *OverrideRemote {
-	return &OverrideRemote{
-		ObjectInfo: oi,
-		remote:     remote,
-	}
-}
-
-// Remote returns the overridden remote name
-func (o *OverrideRemote) Remote() string {
-	return o.remote
-}
-
-// MimeType returns the mime type of the underlying object or "" if it
-// can't be worked out
-func (o *OverrideRemote) MimeType(ctx context.Context) string {
-	if do, ok := o.ObjectInfo.(fs.MimeTyper); ok {
-		return do.MimeType(ctx)
-	}
-	return ""
-}
-
-// ID returns the ID of the Object if known, or "" if not
-func (o *OverrideRemote) ID() string {
-	if do, ok := o.ObjectInfo.(fs.IDer); ok {
-		return do.ID()
-	}
-	return ""
-}
-
-// UnWrap returns the Object that this Object is wrapping or nil if it
-// isn't wrapping anything
-func (o *OverrideRemote) UnWrap() fs.Object {
-	if o, ok := o.ObjectInfo.(fs.Object); ok {
-		return o
-	}
-	return nil
-}
-
-// GetTier returns storage tier or class of the Object
-func (o *OverrideRemote) GetTier() string {
-	if do, ok := o.ObjectInfo.(fs.GetTierer); ok {
-		return do.GetTier()
-	}
-	return ""
-}
-
-// Metadata returns metadata for an object
-//
-// It should return nil if there is no Metadata
-func (o *OverrideRemote) Metadata(ctx context.Context) (fs.Metadata, error) {
-	if do, ok := o.ObjectInfo.(fs.Metadataer); ok {
-		return do.Metadata(ctx)
-	}
-	return nil, nil
-}
-
-// Check all optional interfaces satisfied
-var _ fs.FullObjectInfo = (*OverrideRemote)(nil)
-
 // CommonHash returns a single hash.Type and a HashOption with that
 // type which is in common between the two fs.Fs.
 func CommonHash(ctx context.Context, fa, fb fs.Info) (hash.Type, *fs.HashesOption) {
@@ -476,15 +407,23 @@ func Copy(ctx context.Context, f fs.Fs, dst fs.Object, remote string, src fs.Obj
 						} else {
 							actionTaken = "Copied (Rcat, new)"
 						}
+						// Make any metadata to pass to rcat
+						var meta fs.Metadata
+						if ci.Metadata {
+							meta, err = fs.GetMetadata(ctx, src)
+							if err != nil {
+								fs.Errorf(src, "Failed to read metadata: %v", err)
+							}
+						}
 						// NB Rcat closes in0
-						dst, err = Rcat(ctx, f, remote, in0, src.ModTime(ctx))
+						dst, err = Rcat(ctx, f, remote, in0, src.ModTime(ctx), meta)
 						newDst = dst
 					} else {
 						in := tr.Account(ctx, in0).WithBuffer() // account and buffer the transfer
 						var wrappedSrc fs.ObjectInfo = src
 						// We try to pass the original object if possible
 						if src.Remote() != remote {
-							wrappedSrc = NewOverrideRemote(src, remote)
+							wrappedSrc = fs.NewOverrideRemote(src, remote)
 						}
 						options := []fs.OpenOption{hashOption}
 						for _, option := range ci.UploadHeaders {
@@ -605,7 +544,7 @@ func SameObject(src, dst fs.Object) bool {
 // be nil.
 func Move(ctx context.Context, fdst fs.Fs, dst fs.Object, remote string, src fs.Object) (newDst fs.Object, err error) {
 	ci := fs.GetConfig(ctx)
-	tr := accounting.Stats(ctx).NewCheckingTransfer(src)
+	tr := accounting.Stats(ctx).NewCheckingTransfer(src, "moving")
 	defer func() {
 		if err == nil {
 			accounting.Stats(ctx).Renames(1)
@@ -693,14 +632,13 @@ func SuffixName(ctx context.Context, remote string) string {
 // If backupDir is set then it moves the file to there instead of
 // deleting
 func DeleteFileWithBackupDir(ctx context.Context, dst fs.Object, backupDir fs.Fs) (err error) {
-	ci := fs.GetConfig(ctx)
-	tr := accounting.Stats(ctx).NewCheckingTransfer(dst)
+	tr := accounting.Stats(ctx).NewCheckingTransfer(dst, "deleting")
 	defer func() {
 		tr.Done(ctx, err)
 	}()
-	numDeletes := accounting.Stats(ctx).Deletes(1)
-	if ci.MaxDelete != -1 && numDeletes > ci.MaxDelete {
-		return fserrors.FatalError(errors.New("--max-delete threshold reached"))
+	err = accounting.Stats(ctx).DeleteFile(ctx, dst.Size())
+	if err != nil {
+		return err
 	}
 	action, actioned := "delete", "Deleted"
 	if backupDir != nil {
@@ -739,11 +677,11 @@ func DeleteFile(ctx context.Context, dst fs.Object) (err error) {
 func DeleteFilesWithBackupDir(ctx context.Context, toBeDeleted fs.ObjectsChan, backupDir fs.Fs) error {
 	var wg sync.WaitGroup
 	ci := fs.GetConfig(ctx)
-	wg.Add(ci.Transfers)
+	wg.Add(ci.Checkers)
 	var errorCount int32
 	var fatalErrorCount int32
 
-	for i := 0; i < ci.Transfers; i++ {
+	for i := 0; i < ci.Checkers; i++ {
 		go func() {
 			defer wg.Done()
 			for dst := range toBeDeleted {
@@ -999,7 +937,7 @@ func List(ctx context.Context, f fs.Fs, w io.Writer) error {
 func ListLong(ctx context.Context, f fs.Fs, w io.Writer) error {
 	ci := fs.GetConfig(ctx)
 	return ListFn(ctx, f, func(o fs.Object) {
-		tr := accounting.Stats(ctx).NewCheckingTransfer(o)
+		tr := accounting.Stats(ctx).NewCheckingTransfer(o, "listing")
 		defer func() {
 			tr.Done(ctx, nil)
 		}()
@@ -1057,7 +995,7 @@ func hashSum(ctx context.Context, ht hash.Type, base64Encoded bool, downloadFlag
 			return "ERROR", fmt.Errorf("hasher returned an error: %w", err)
 		}
 	} else {
-		tr := accounting.Stats(ctx).NewCheckingTransfer(o)
+		tr := accounting.Stats(ctx).NewCheckingTransfer(o, "hashing")
 		defer func() {
 			tr.Done(ctx, err)
 		}()
@@ -1083,7 +1021,12 @@ func hashSum(ctx context.Context, ht hash.Type, base64Encoded bool, downloadFlag
 // Updated to perform multiple hashes concurrently
 func HashLister(ctx context.Context, ht hash.Type, outputBase64 bool, downloadFlag bool, f fs.Fs, w io.Writer) error {
 	width := hash.Width(ht, outputBase64)
-	concurrencyControl := make(chan struct{}, fs.GetConfig(ctx).Transfers)
+	// Use --checkers concurrency unless downloading in which case use --transfers
+	concurrency := fs.GetConfig(ctx).Checkers
+	if downloadFlag {
+		concurrency = fs.GetConfig(ctx).Transfers
+	}
+	concurrencyControl := make(chan struct{}, concurrency)
 	var wg sync.WaitGroup
 	err := ListFn(ctx, f, func(o fs.Object) {
 		wg.Add(1)
@@ -1234,7 +1177,7 @@ func Purge(ctx context.Context, f fs.Fs, dir string) (err error) {
 // obeys includes and excludes.
 func Delete(ctx context.Context, f fs.Fs) error {
 	ci := fs.GetConfig(ctx)
-	delChan := make(fs.ObjectsChan, ci.Transfers)
+	delChan := make(fs.ObjectsChan, ci.Checkers)
 	delErr := make(chan error, 1)
 	go func() {
 		delErr <- DeleteFiles(ctx, delChan)
@@ -1348,7 +1291,7 @@ func Cat(ctx context.Context, f fs.Fs, w io.Writer, offset, count int64) error {
 }
 
 // Rcat reads data from the Reader until EOF and uploads it to a file on remote
-func Rcat(ctx context.Context, fdst fs.Fs, dstFileName string, in io.ReadCloser, modTime time.Time) (dst fs.Object, err error) {
+func Rcat(ctx context.Context, fdst fs.Fs, dstFileName string, in io.ReadCloser, modTime time.Time, meta fs.Metadata) (dst fs.Object, err error) {
 	ci := fs.GetConfig(ctx)
 	tr := accounting.Stats(ctx).NewTransferRemoteSize(dstFileName, -1)
 	defer func() {
@@ -1387,7 +1330,7 @@ func Rcat(ctx context.Context, fdst fs.Fs, dstFileName string, in io.ReadCloser,
 			opt.checkSum = true
 			sums = hasher.Sums()
 		}
-		src := object.NewStaticObjectInfo(dstFileName, modTime, int64(readCounter.BytesRead()), false, sums, fdst)
+		src := object.NewStaticObjectInfo(dstFileName, modTime, int64(readCounter.BytesRead()), false, sums, fdst).WithMetadata(meta)
 		if !equal(ctx, src, dst, opt) {
 			err = fmt.Errorf("corrupted on transfer")
 			err = fs.CountError(err)
@@ -1401,7 +1344,7 @@ func Rcat(ctx context.Context, fdst fs.Fs, dstFileName string, in io.ReadCloser,
 	buf := make([]byte, ci.StreamingUploadCutoff)
 	if n, err := io.ReadFull(trackingIn, buf); err == io.EOF || err == io.ErrUnexpectedEOF {
 		fs.Debugf(fdst, "File to upload is small (%d bytes), uploading instead of streaming", n)
-		src := object.NewMemoryObject(dstFileName, modTime, buf[:n])
+		src := object.NewMemoryObject(dstFileName, modTime, buf[:n]).WithMetadata(meta)
 		return Copy(ctx, fdst, nil, dstFileName, src)
 	}
 
@@ -1430,11 +1373,11 @@ func Rcat(ctx context.Context, fdst fs.Fs, dstFileName string, in io.ReadCloser,
 
 	if SkipDestructive(ctx, dstFileName, "upload from pipe") {
 		// prevents "broken pipe" errors
-		_, err = io.Copy(ioutil.Discard, in)
+		_, err = io.Copy(io.Discard, in)
 		return nil, err
 	}
 
-	objInfo := object.NewStaticObjectInfo(dstFileName, modTime, -1, false, nil, nil)
+	objInfo := object.NewStaticObjectInfo(dstFileName, modTime, -1, false, nil, nil).WithMetadata(meta)
 	if dst, err = fStreamTo.Features().PutStream(ctx, in, objInfo, options...); err != nil {
 		return dst, err
 	}
@@ -1443,7 +1386,22 @@ func Rcat(ctx context.Context, fdst fs.Fs, dstFileName string, in io.ReadCloser,
 	}
 	if !canStream {
 		// copy dst (which is the local object we have just streamed to) to the remote
-		return Copy(ctx, fdst, nil, dstFileName, dst)
+		newCtx := ctx
+		if ci.Metadata && len(meta) != 0 {
+			// If we have metadata and we are setting it then use
+			// the --metadataset mechanism to supply it to Copy
+			var newCi *fs.ConfigInfo
+			newCtx, newCi = fs.AddConfig(ctx)
+			if len(newCi.MetadataSet) == 0 {
+				newCi.MetadataSet = meta
+			} else {
+				var newMeta fs.Metadata
+				newMeta.Merge(meta)
+				newMeta.Merge(newCi.MetadataSet) // --metadata-set takes priority
+				newCi.MetadataSet = newMeta
+			}
+		}
+		return Copy(newCtx, fdst, nil, dstFileName, dst)
 	}
 	return dst, nil
 }
@@ -1515,7 +1473,7 @@ func Rmdirs(ctx context.Context, f fs.Fs, dir string, leaveRoot bool) error {
 		dir := toDelete[i]
 		// If a filter matches the directory then that
 		// directory is a candidate for deletion
-		if !fi.Include(dir+"/", 0, time.Now()) {
+		if !fi.IncludeRemote(dir + "/") {
 			continue
 		}
 		err = TryRmdir(ctx, f, dir)
@@ -1725,7 +1683,7 @@ func NeedTransfer(ctx context.Context, dst, src fs.Object) bool {
 
 // RcatSize reads data from the Reader until EOF and uploads it to a file on remote.
 // Pass in size >=0 if known, <0 if not known
-func RcatSize(ctx context.Context, fdst fs.Fs, dstFileName string, in io.ReadCloser, size int64, modTime time.Time) (dst fs.Object, err error) {
+func RcatSize(ctx context.Context, fdst fs.Fs, dstFileName string, in io.ReadCloser, size int64, modTime time.Time, meta fs.Metadata) (dst fs.Object, err error) {
 	var obj fs.Object
 
 	if size >= 0 {
@@ -1735,16 +1693,16 @@ func RcatSize(ctx context.Context, fdst fs.Fs, dstFileName string, in io.ReadClo
 		defer func() {
 			tr.Done(ctx, err)
 		}()
-		body := ioutil.NopCloser(in) // we let the server close the body
-		in := tr.Account(ctx, body)  // account the transfer (no buffering)
+		body := io.NopCloser(in)    // we let the server close the body
+		in := tr.Account(ctx, body) // account the transfer (no buffering)
 
 		if SkipDestructive(ctx, dstFileName, "upload from pipe") {
 			// prevents "broken pipe" errors
-			_, err = io.Copy(ioutil.Discard, in)
+			_, err = io.Copy(io.Discard, in)
 			return nil, err
 		}
 
-		info := object.NewStaticObjectInfo(dstFileName, modTime, size, true, nil, fdst)
+		info := object.NewStaticObjectInfo(dstFileName, modTime, size, true, nil, fdst).WithMetadata(meta)
 		obj, err = fdst.Put(ctx, in, info)
 		if err != nil {
 			fs.Errorf(dstFileName, "Post request put error: %v", err)
@@ -1753,7 +1711,7 @@ func RcatSize(ctx context.Context, fdst fs.Fs, dstFileName string, in io.ReadClo
 		}
 	} else {
 		// Size unknown use Rcat
-		obj, err = Rcat(ctx, fdst, dstFileName, in, modTime)
+		obj, err = Rcat(ctx, fdst, dstFileName, in, modTime, meta)
 		if err != nil {
 			fs.Errorf(dstFileName, "Post request rcat error: %v", err)
 
@@ -1812,7 +1770,7 @@ func CopyURL(ctx context.Context, fdst fs.Fs, dstFileName string, url string, au
 				return errors.New("CopyURL failed: file already exist")
 			}
 		}
-		dst, err = RcatSize(ctx, fdst, dstFileName, in, size, modTime)
+		dst, err = RcatSize(ctx, fdst, dstFileName, in, size, modTime, nil)
 		return err
 	})
 	return dst, err
@@ -1975,7 +1933,6 @@ func moveOrCopyFile(ctx context.Context, fdst fs.Fs, fsrc fs.Fs, dstFileName str
 
 		_, err = Op(ctx, fdst, dstObj, dstFileName, srcObj)
 	} else {
-		tr := accounting.Stats(ctx).NewCheckingTransfer(srcObj)
 		if !cp {
 			if ci.IgnoreExisting {
 				fs.Debugf(srcObj, "Not removing source file as destination file exists and --ignore-existing is set")
@@ -1983,7 +1940,6 @@ func moveOrCopyFile(ctx context.Context, fdst fs.Fs, fsrc fs.Fs, dstFileName str
 				err = DeleteFile(ctx, srcObj)
 			}
 		}
-		tr.Done(ctx, err)
 	}
 	return err
 }
@@ -2235,9 +2191,9 @@ func DirMove(ctx context.Context, f fs.Fs, srcRemote, dstRemote string) (err err
 		o       fs.Object
 		newPath string
 	}
-	renames := make(chan rename, ci.Transfers)
+	renames := make(chan rename, ci.Checkers)
 	g, gCtx := errgroup.WithContext(context.Background())
-	for i := 0; i < ci.Transfers; i++ {
+	for i := 0; i < ci.Checkers; i++ {
 		g.Go(func() error {
 			for job := range renames {
 				dstOverwritten, _ := f.NewObject(gCtx, job.newPath)

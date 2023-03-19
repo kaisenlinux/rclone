@@ -235,7 +235,7 @@ func NewFs(ctx context.Context, name, rpath string, m configmap.Mapper) (fs.Fs, 
 	// the features here are ones we could support, and they are
 	// ANDed with the ones from wrappedFs
 	f.features = (&fs.Features{
-		CaseInsensitive:         cipher.NameEncryptionMode() == NameEncryptionOff,
+		CaseInsensitive:         !cipher.dirNameEncrypt || cipher.NameEncryptionMode() == NameEncryptionOff,
 		DuplicateFiles:          true,
 		ReadMimeType:            false, // MimeTypes not supported with crypt
 		WriteMimeType:           false,
@@ -396,6 +396,8 @@ type putFn func(ctx context.Context, in io.Reader, src fs.ObjectInfo, options ..
 
 // put implements Put or PutStream
 func (f *Fs) put(ctx context.Context, in io.Reader, src fs.ObjectInfo, options []fs.OpenOption, put putFn) (fs.Object, error) {
+	ci := fs.GetConfig(ctx)
+
 	if f.opt.NoDataEncryption {
 		o, err := put(ctx, in, f.newObjectInfo(src, nonce{}), options...)
 		if err == nil && o != nil {
@@ -413,6 +415,9 @@ func (f *Fs) put(ctx context.Context, in io.Reader, src fs.ObjectInfo, options [
 	// Find a hash the destination supports to compute a hash of
 	// the encrypted data
 	ht := f.Fs.Hashes().GetOne()
+	if ci.IgnoreChecksum {
+		ht = hash.None
+	}
 	var hasher *hash.MultiHasher
 	if ht != hash.None {
 		hasher, err = hash.NewMultiHasherTypes(hash.NewHashSet(ht))
@@ -1047,10 +1052,11 @@ func (o *ObjectInfo) Hash(ctx context.Context, hash hash.Type) (string, error) {
 	// Get the underlying object if there is one
 	if srcObj, ok = o.ObjectInfo.(fs.Object); ok {
 		// Prefer direct interface assertion
-	} else if do, ok := o.ObjectInfo.(fs.ObjectUnWrapper); ok {
-		// Otherwise likely is an operations.OverrideRemote
+	} else if do, ok := o.ObjectInfo.(*fs.OverrideRemote); ok {
+		// Unwrap if it is an operations.OverrideRemote
 		srcObj = do.UnWrap()
 	} else {
+		// Otherwise don't unwrap any further
 		return "", nil
 	}
 	// if this is wrapping a local object then we work out the hash

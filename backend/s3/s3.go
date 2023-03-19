@@ -15,7 +15,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"path"
@@ -25,6 +24,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -65,7 +66,7 @@ import (
 func init() {
 	fs.Register(&fs.RegInfo{
 		Name:        "s3",
-		Description: "Amazon S3 Compliant Storage Providers including AWS, Alibaba, Ceph, China Mobile, Cloudflare, ArvanCloud, Digital Ocean, Dreamhost, Huawei OBS, IBM COS, IDrive e2, IONOS Cloud, Lyve Cloud, Minio, Netease, RackCorp, Scaleway, SeaweedFS, StackPath, Storj, Tencent COS, Qiniu and Wasabi",
+		Description: "Amazon S3 Compliant Storage Providers including AWS, Alibaba, Ceph, China Mobile, Cloudflare, ArvanCloud, DigitalOcean, Dreamhost, Huawei OBS, IBM COS, IDrive e2, IONOS Cloud, Liara, Lyve Cloud, Minio, Netease, RackCorp, Scaleway, SeaweedFS, StackPath, Storj, Tencent COS, Qiniu and Wasabi",
 		NewFs:       NewFs,
 		CommandHelp: commandHelp,
 		Config: func(ctx context.Context, name string, m configmap.Mapper, config fs.ConfigIn) (*fs.ConfigOut, error) {
@@ -104,7 +105,7 @@ func init() {
 				Help:  "Arvan Cloud Object Storage (AOS)",
 			}, {
 				Value: "DigitalOcean",
-				Help:  "Digital Ocean Spaces",
+				Help:  "DigitalOcean Spaces",
 			}, {
 				Value: "Dreamhost",
 				Help:  "Dreamhost DreamObjects",
@@ -123,6 +124,9 @@ func init() {
 			}, {
 				Value: "LyveCloud",
 				Help:  "Seagate Lyve Cloud",
+			}, {
+				Value: "Liara",
+				Help:  "Liara Object Storage",
 			}, {
 				Value: "Minio",
 				Help:  "Minio Object Storage",
@@ -436,7 +440,7 @@ func init() {
 		}, {
 			Name:     "region",
 			Help:     "Region to connect to.\n\nLeave blank if you are using an S3 clone and you don't have a region.",
-			Provider: "!AWS,Alibaba,ChinaMobile,Cloudflare,IONOS,ArvanCloud,Qiniu,RackCorp,Scaleway,Storj,TencentCOS,HuaweiOBS,IDrive",
+			Provider: "!AWS,Alibaba,ChinaMobile,Cloudflare,IONOS,ArvanCloud,Liara,Qiniu,RackCorp,Scaleway,Storj,TencentCOS,HuaweiOBS,IDrive",
 			Examples: []fs.OptionExample{{
 				Value: "",
 				Help:  "Use this if unsure.\nWill use v4 signatures and an empty region.",
@@ -762,6 +766,15 @@ func init() {
 				Help:  "Logrono, Spain",
 			}},
 		}, {
+			// Liara endpoints: https://liara.ir/landing/object-storage
+			Name:     "endpoint",
+			Help:     "Endpoint for Liara Object Storage API.",
+			Provider: "Liara",
+			Examples: []fs.OptionExample{{
+				Value: "storage.iran.liara.space",
+				Help:  "The default endpoint\nIran",
+			}},
+		}, {
 			// oss endpoints: https://help.aliyun.com/document_detail/31837.html
 			Name:     "endpoint",
 			Help:     "Endpoint for OSS API.",
@@ -923,17 +936,11 @@ func init() {
 			}},
 		}, {
 			Name:     "endpoint",
-			Help:     "Endpoint of the Shared Gateway.",
+			Help:     "Endpoint for Storj Gateway.",
 			Provider: "Storj",
 			Examples: []fs.OptionExample{{
-				Value: "gateway.eu1.storjshare.io",
-				Help:  "EU1 Shared Gateway",
-			}, {
-				Value: "gateway.us1.storjshare.io",
-				Help:  "US1 Shared Gateway",
-			}, {
-				Value: "gateway.ap1.storjshare.io",
-				Help:  "Asia-Pacific Shared Gateway",
+				Value: "gateway.storjshare.io",
+				Help:  "Global Hosted Gateway",
 			}},
 		}, {
 			// cos endpoints: https://intl.cloud.tencent.com/document/product/436/6224
@@ -1091,22 +1098,34 @@ func init() {
 		}, {
 			Name:     "endpoint",
 			Help:     "Endpoint for S3 API.\n\nRequired when using an S3 clone.",
-			Provider: "!AWS,IBMCOS,IDrive,IONOS,TencentCOS,HuaweiOBS,Alibaba,ChinaMobile,ArvanCloud,Scaleway,StackPath,Storj,RackCorp,Qiniu",
+			Provider: "!AWS,IBMCOS,IDrive,IONOS,TencentCOS,HuaweiOBS,Alibaba,ChinaMobile,Liara,ArvanCloud,Scaleway,StackPath,Storj,RackCorp,Qiniu",
 			Examples: []fs.OptionExample{{
 				Value:    "objects-us-east-1.dream.io",
 				Help:     "Dream Objects endpoint",
 				Provider: "Dreamhost",
 			}, {
+				Value:    "syd1.digitaloceanspaces.com",
+				Help:     "DigitalOcean Spaces Sydney 1",
+				Provider: "DigitalOcean",
+			}, {
+				Value:    "sfo3.digitaloceanspaces.com",
+				Help:     "DigitalOcean Spaces San Francisco 3",
+				Provider: "DigitalOcean",
+			}, {
+				Value:    "fra1.digitaloceanspaces.com",
+				Help:     "DigitalOcean Spaces Frankfurt 1",
+				Provider: "DigitalOcean",
+			}, {
 				Value:    "nyc3.digitaloceanspaces.com",
-				Help:     "Digital Ocean Spaces New York 3",
+				Help:     "DigitalOcean Spaces New York 3",
 				Provider: "DigitalOcean",
 			}, {
 				Value:    "ams3.digitaloceanspaces.com",
-				Help:     "Digital Ocean Spaces Amsterdam 3",
+				Help:     "DigitalOcean Spaces Amsterdam 3",
 				Provider: "DigitalOcean",
 			}, {
 				Value:    "sgp1.digitaloceanspaces.com",
-				Help:     "Digital Ocean Spaces Singapore 1",
+				Help:     "DigitalOcean Spaces Singapore 1",
 				Provider: "DigitalOcean",
 			}, {
 				Value:    "localhost:8333",
@@ -1176,6 +1195,10 @@ func init() {
 				Value:    "s3.ap-southeast-2.wasabisys.com",
 				Help:     "Wasabi AP Southeast 2 (Sydney)",
 				Provider: "Wasabi",
+			}, {
+				Value:    "storage.iran.liara.space",
+				Help:     "Liara Iran endpoint",
+				Provider: "Liara",
 			}, {
 				Value:    "s3.ir-thr-at1.arvanstorage.com",
 				Help:     "ArvanCloud Tehran Iran (Asiatech) endpoint",
@@ -1559,7 +1582,7 @@ func init() {
 		}, {
 			Name:     "location_constraint",
 			Help:     "Location constraint - must be set to match the Region.\n\nLeave blank if not sure. Used when creating buckets only.",
-			Provider: "!AWS,Alibaba,HuaweiOBS,ChinaMobile,Cloudflare,IBMCOS,IDrive,IONOS,ArvanCloud,Qiniu,RackCorp,Scaleway,StackPath,Storj,TencentCOS",
+			Provider: "!AWS,Alibaba,HuaweiOBS,ChinaMobile,Cloudflare,IBMCOS,IDrive,IONOS,Liara,ArvanCloud,Qiniu,RackCorp,Scaleway,StackPath,Storj,TencentCOS",
 		}, {
 			Name: "acl",
 			Help: `Canned ACL used when creating buckets and storing or copying objects.
@@ -1569,7 +1592,11 @@ This ACL is used for creating objects and if bucket_acl isn't set, for creating 
 For more info visit https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html#canned-acl
 
 Note that this ACL is applied when server-side copying objects as S3
-doesn't copy the ACL from the source but rather writes a fresh one.`,
+doesn't copy the ACL from the source but rather writes a fresh one.
+
+If the acl is an empty string then no X-Amz-Acl: header is added and
+the default (private) will be used.
+`,
 			Provider: "!Storj,Cloudflare",
 			Examples: []fs.OptionExample{{
 				Value:    "default",
@@ -1623,7 +1650,11 @@ doesn't copy the ACL from the source but rather writes a fresh one.`,
 For more info visit https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html#canned-acl
 
 Note that this ACL is applied when only when creating buckets.  If it
-isn't set then "acl" is used instead.`,
+isn't set then "acl" is used instead.
+
+If the "acl" and "bucket_acl" are empty strings then no X-Amz-Acl:
+header is added and the default (private) will be used.
+`,
 			Advanced: true,
 			Examples: []fs.OptionExample{{
 				Value: "private",
@@ -1783,6 +1814,15 @@ If you leave it blank, this is calculated automatically from the sse_customer_ke
 			}, {
 				Value: "STANDARD_IA",
 				Help:  "Infrequent access storage mode",
+			}},
+		}, {
+			// Mapping from here: https://liara.ir/landing/object-storage
+			Name:     "storage_class",
+			Help:     "The storage class to use when storing new objects in Liara",
+			Provider: "Liara",
+			Examples: []fs.OptionExample{{
+				Value: "STANDARD",
+				Help:  "Standard storage class",
 			}},
 		}, {
 			// Mapping from here: https://www.arvancloud.com/en/products/cloud-storage
@@ -2226,6 +2266,11 @@ rclone's choice here.
 			Help:     `Suppress setting and reading of system metadata`,
 			Advanced: true,
 			Default:  false,
+		}, {
+			Name:     "sts_endpoint",
+			Help:     "Endpoint for STS.\n\nLeave blank if using AWS to use the default endpoint for the region.",
+			Provider: "AWS",
+			Advanced: true,
 		},
 		}})
 }
@@ -2312,6 +2357,7 @@ type Options struct {
 	SecretAccessKey       string               `config:"secret_access_key"`
 	Region                string               `config:"region"`
 	Endpoint              string               `config:"endpoint"`
+	STSEndpoint           string               `config:"sts_endpoint"`
 	LocationConstraint    string               `config:"location_constraint"`
 	ACL                   string               `config:"acl"`
 	BucketACL             string               `config:"bucket_acl"`
@@ -2488,7 +2534,7 @@ func parsePath(path string) (root string) {
 // split returns bucket and bucketPath from the rootRelativePath
 // relative to f.root
 func (f *Fs) split(rootRelativePath string) (bucketName, bucketPath string) {
-	bucketName, bucketPath = bucket.Split(path.Join(f.root, rootRelativePath))
+	bucketName, bucketPath = bucket.Split(bucket.Join(f.root, rootRelativePath))
 	return f.opt.Enc.FromStandardName(bucketName), f.opt.Enc.FromStandardPath(bucketPath)
 }
 
@@ -2518,6 +2564,38 @@ func getClient(ctx context.Context, opt *Options) *http.Client {
 	return &http.Client{
 		Transport: t,
 	}
+}
+
+// Default name resolver
+var defaultResolver = endpoints.DefaultResolver()
+
+// resolve (service, region) to endpoint
+//
+// Used to set endpoint for s3 services and not for other services
+type resolver map[string]string
+
+// Add a service to the resolver, ignoring empty urls
+func (r resolver) addService(service, url string) {
+	if url == "" {
+		return
+	}
+	if !strings.HasPrefix(url, "http") {
+		url = "https://" + url
+	}
+	r[service] = url
+}
+
+// EndpointFor return the endpoint for s3 if set or the default if not
+func (r resolver) EndpointFor(service, region string, opts ...func(*endpoints.Options)) (endpoints.ResolvedEndpoint, error) {
+	fs.Debugf(nil, "Resolving service %q region %q", service, region)
+	url, ok := r[service]
+	if ok {
+		return endpoints.ResolvedEndpoint{
+			URL:           url,
+			SigningRegion: region,
+		}, nil
+	}
+	return defaultResolver.EndpointFor(service, region, opts...)
 }
 
 // s3Connection makes a connection to s3
@@ -2598,8 +2676,12 @@ func s3Connection(ctx context.Context, opt *Options, client *http.Client) (*s3.S
 	if opt.Region != "" {
 		awsConfig.WithRegion(opt.Region)
 	}
-	if opt.Endpoint != "" {
-		awsConfig.WithEndpoint(opt.Endpoint)
+	if opt.Endpoint != "" || opt.STSEndpoint != "" {
+		// If endpoints are set, override the relevant services only
+		r := make(resolver)
+		r.addService("s3", opt.Endpoint)
+		r.addService("sts", opt.STSEndpoint)
+		awsConfig.WithEndpointResolver(r)
 	}
 
 	// awsConfig.WithLogLevel(aws.LogDebugWithSigning)
@@ -2755,6 +2837,10 @@ func setQuirks(opt *Options) {
 		// listObjectsV2 supported - https://api.ionos.com/docs/s3/#Basic-Operations-get-Bucket-list-type-2
 		virtualHostStyle = false
 		urlEncodeListings = false
+	case "Liara":
+		virtualHostStyle = false
+		urlEncodeListings = false
+		useMultipartEtag = false
 	case "LyveCloud":
 		useMultipartEtag = false // LyveCloud seems to calculate multipart Etags differently from AWS
 	case "Minio":
@@ -2846,6 +2932,14 @@ func (f *Fs) setRoot(root string) {
 	f.rootBucket, f.rootDirectory = bucket.Split(f.root)
 }
 
+// return a pointer to the string if non empty or nil if it is empty
+func stringPointerOrNil(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
+}
+
 // NewFs constructs an Fs from the path, bucket:path
 func NewFs(ctx context.Context, name, root string, m configmap.Mapper) (fs.Fs, error) {
 	// Parse config into Options struct
@@ -2864,9 +2958,6 @@ func NewFs(ctx context.Context, name, root string, m configmap.Mapper) (fs.Fs, e
 	}
 	if opt.Versions && opt.VersionAt.IsSet() {
 		return nil, errors.New("s3: cant use --s3-versions and --s3-version-at at the same time")
-	}
-	if opt.ACL == "" {
-		opt.ACL = "private"
 	}
 	if opt.BucketACL == "" {
 		opt.BucketACL = opt.ACL
@@ -2940,6 +3031,15 @@ func NewFs(ctx context.Context, name, root string, m configmap.Mapper) (fs.Fs, e
 		GetTier:           true,
 		SlowModTime:       true,
 	}).Fill(ctx, f)
+	if opt.Provider == "Storj" {
+		f.features.SetTier = false
+		f.features.GetTier = false
+	}
+	if opt.Provider == "IDrive" {
+		f.features.SetTier = false
+	}
+	// f.listMultipartUploads()
+
 	if f.rootBucket != "" && f.rootDirectory != "" && !opt.NoHeadObject && !strings.HasSuffix(root, "/") {
 		// Check to see if the (bucket,directory) is actually an existing file
 		oldRoot := f.root
@@ -2954,14 +3054,6 @@ func NewFs(ctx context.Context, name, root string, m configmap.Mapper) (fs.Fs, e
 		// return an error with an fs which points to the parent
 		return f, fs.ErrorIsFile
 	}
-	if opt.Provider == "Storj" {
-		f.features.SetTier = false
-		f.features.GetTier = false
-	}
-	if opt.Provider == "IDrive" {
-		f.features.SetTier = false
-	}
-	// f.listMultipartUploads()
 	return f, nil
 }
 
@@ -3013,6 +3105,17 @@ func (f *Fs) getMetaDataListing(ctx context.Context, wantRemote string) (info *s
 	return info, versionID, nil
 }
 
+// stringClonePointer clones the string pointed to by sp into new
+// memory. This is useful to stop us keeping references to small
+// strings carved out of large XML responses.
+func stringClonePointer(sp *string) *string {
+	if sp == nil {
+		return nil
+	}
+	var s = *sp
+	return &s
+}
+
 // Return an Object from a path
 //
 // If it can't be found it returns the error ErrorObjectNotFound.
@@ -3038,8 +3141,8 @@ func (f *Fs) newObjectWithInfo(ctx context.Context, remote string, info *s3.Obje
 		}
 		o.setMD5FromEtag(aws.StringValue(info.ETag))
 		o.bytes = aws.Int64Value(info.Size)
-		o.storageClass = info.StorageClass
-		o.versionID = versionID
+		o.storageClass = stringClonePointer(info.StorageClass)
+		o.versionID = stringClonePointer(versionID)
 	} else if !o.fs.opt.NoHeadObject {
 		err := o.readMetaData(ctx) // reads info and meta, returning an error
 		if err != nil {
@@ -3057,19 +3160,13 @@ func (f *Fs) NewObject(ctx context.Context, remote string) (fs.Object, error) {
 
 // Gets the bucket location
 func (f *Fs) getBucketLocation(ctx context.Context, bucket string) (string, error) {
-	req := s3.GetBucketLocationInput{
-		Bucket: &bucket,
-	}
-	var resp *s3.GetBucketLocationOutput
-	var err error
-	err = f.pacer.Call(func() (bool, error) {
-		resp, err = f.c.GetBucketLocation(&req)
-		return f.shouldRetry(ctx, err)
+	region, err := s3manager.GetBucketRegion(ctx, f.ses, bucket, "", func(r *request.Request) {
+		r.Config.S3ForcePathStyle = aws.Bool(f.opt.ForcePathStyle)
 	})
 	if err != nil {
 		return "", err
 	}
-	return s3.NormalizeBucketLocation(aws.StringValue(resp.LocationConstraint)), nil
+	return region, nil
 }
 
 // Updates the region for the bucket by reading the region from the
@@ -3185,6 +3282,9 @@ func (ls *v2List) List(ctx context.Context) (resp *s3.ListObjectsV2Output, versi
 	resp, err = ls.f.c.ListObjectsV2WithContext(ctx, &ls.req)
 	if err != nil {
 		return nil, nil, err
+	}
+	if aws.BoolValue(resp.IsTruncated) && (resp.NextContinuationToken == nil || *resp.NextContinuationToken == "") {
+		return nil, nil, errors.New("s3 protocol error: received listing v2 with IsTruncated set and no NextContinuationToken. Should you be using `--s3-list-version 1`?")
 	}
 	ls.req.ContinuationToken = resp.NextContinuationToken
 	return resp, nil, nil
@@ -3368,15 +3468,16 @@ var errEndList = errors.New("end list")
 
 // list options
 type listOpt struct {
-	bucket       string  // bucket to list
-	directory    string  // directory with bucket
-	prefix       string  // prefix to remove from listing
-	addBucket    bool    // if set, the bucket is added to the start of the remote
-	recurse      bool    // if set, recurse to read sub directories
-	withVersions bool    // if set, versions are produced
-	hidden       bool    // if set, return delete markers as objects with size == isDeleteMarker
-	findFile     bool    // if set, it will look for files called (bucket, directory)
-	versionAt    fs.Time // if set only show versions <= this time
+	bucket        string  // bucket to list
+	directory     string  // directory with bucket
+	prefix        string  // prefix to remove from listing
+	addBucket     bool    // if set, the bucket is added to the start of the remote
+	recurse       bool    // if set, recurse to read sub directories
+	withVersions  bool    // if set, versions are produced
+	hidden        bool    // if set, return delete markers as objects with size == isDeleteMarker
+	findFile      bool    // if set, it will look for files called (bucket, directory)
+	versionAt     fs.Time // if set only show versions <= this time
+	noSkipMarkers bool    // if set return dir marker objects
 }
 
 // list lists the objects into the function supplied with the opt
@@ -3489,7 +3590,7 @@ func (f *Fs) list(ctx context.Context, opt listOpt, fn listFn) error {
 				}
 				remote = remote[len(opt.prefix):]
 				if opt.addBucket {
-					remote = path.Join(opt.bucket, remote)
+					remote = bucket.Join(opt.bucket, remote)
 				}
 				remote = strings.TrimSuffix(remote, "/")
 				err = fn(remote, &s3.Object{Key: &remote}, nil, true)
@@ -3518,10 +3619,10 @@ func (f *Fs) list(ctx context.Context, opt listOpt, fn listFn) error {
 			remote = remote[len(opt.prefix):]
 			isDirectory := remote == "" || strings.HasSuffix(remote, "/")
 			if opt.addBucket {
-				remote = path.Join(opt.bucket, remote)
+				remote = bucket.Join(opt.bucket, remote)
 			}
 			// is this a directory marker?
-			if isDirectory && object.Size != nil && *object.Size == 0 {
+			if isDirectory && object.Size != nil && *object.Size == 0 && !opt.noSkipMarkers {
 				continue // skip directory marker
 			}
 			if versionIDs != nil {
@@ -3744,7 +3845,7 @@ func (f *Fs) makeBucket(ctx context.Context, bucket string) error {
 	return f.cache.Create(bucket, func() error {
 		req := s3.CreateBucketInput{
 			Bucket: &bucket,
-			ACL:    &f.opt.BucketACL,
+			ACL:    stringPointerOrNil(f.opt.BucketACL),
 		}
 		if f.opt.LocationConstraint != "" {
 			req.CreateBucketConfiguration = &s3.CreateBucketConfiguration{
@@ -3809,9 +3910,9 @@ func pathEscape(s string) string {
 // method
 func (f *Fs) copy(ctx context.Context, req *s3.CopyObjectInput, dstBucket, dstPath, srcBucket, srcPath string, src *Object) error {
 	req.Bucket = &dstBucket
-	req.ACL = &f.opt.ACL
+	req.ACL = stringPointerOrNil(f.opt.ACL)
 	req.Key = &dstPath
-	source := pathEscape(path.Join(srcBucket, srcPath))
+	source := pathEscape(bucket.Join(srcBucket, srcPath))
 	if src.versionID != nil {
 		source += fmt.Sprintf("?versionId=%s", *src.versionID)
 	}
@@ -4046,9 +4147,9 @@ Usage Examples:
     rclone backend restore s3:bucket/path/to/directory [-o priority=PRIORITY] [-o lifetime=DAYS]
     rclone backend restore s3:bucket [-o priority=PRIORITY] [-o lifetime=DAYS]
 
-This flag also obeys the filters. Test first with -i/--interactive or --dry-run flags
+This flag also obeys the filters. Test first with --interactive/-i or --dry-run flags
 
-    rclone -i backend restore --include "*.txt" s3:bucket/path -o priority=Standard
+    rclone --interactive backend restore --include "*.txt" s3:bucket/path -o priority=Standard
 
 All the objects shown will be marked for restore, then
 
@@ -4116,8 +4217,8 @@ a bucket or with a bucket and path.
 	Long: `This command removes unfinished multipart uploads of age greater than
 max-age which defaults to 24 hours.
 
-Note that you can use -i/--dry-run with this command to see what it
-would do.
+Note that you can use --interactive/-i or --dry-run with this command to see what
+it would do.
 
     rclone backend cleanup s3:bucket/path/to/object
     rclone backend cleanup -o max-age=7w s3:bucket/path/to/object
@@ -4133,8 +4234,8 @@ Durations are parsed as per the rest of rclone, 2h, 7d, 7w etc.
 	Long: `This command removes any old hidden versions of files
 on a versions enabled bucket.
 
-Note that you can use -i/--dry-run with this command to see what it
-would do.
+Note that you can use --interactive/-i or --dry-run with this command to see what
+it would do.
 
     rclone backend cleanup-hidden s3:bucket/path/to/dir
 `,
@@ -4468,13 +4569,14 @@ func (f *Fs) purge(ctx context.Context, dir string, oldOnly bool) error {
 		delErr <- operations.DeleteFiles(ctx, delChan)
 	}()
 	checkErr(f.list(ctx, listOpt{
-		bucket:       bucket,
-		directory:    directory,
-		prefix:       f.rootDirectory,
-		addBucket:    f.rootBucket == "",
-		recurse:      true,
-		withVersions: versioned,
-		hidden:       true,
+		bucket:        bucket,
+		directory:     directory,
+		prefix:        f.rootDirectory,
+		addBucket:     f.rootBucket == "",
+		recurse:       true,
+		withVersions:  versioned,
+		hidden:        true,
+		noSkipMarkers: true,
 	}, func(remote string, object *s3.Object, versionID *string, isDirectory bool) error {
 		if isDirectory {
 			return nil
@@ -4484,7 +4586,7 @@ func (f *Fs) purge(ctx context.Context, dir string, oldOnly bool) error {
 			fs.Errorf(object, "Can't create object %+v", err)
 			return nil
 		}
-		tr := accounting.Stats(ctx).NewCheckingTransfer(oi)
+		tr := accounting.Stats(ctx).NewCheckingTransfer(oi, "checking")
 		// Work out whether the file is the current version or not
 		isCurrentVersion := !versioned || !version.Match(remote)
 		fs.Debugf(nil, "%q version %v", remote, version.Match(remote))
@@ -4787,23 +4889,12 @@ func (o *Object) downloadFromURL(ctx context.Context, bucketPath string, options
 		return nil, err
 	}
 
-	contentLength := &resp.ContentLength
-	if resp.Header.Get("Content-Range") != "" {
-		var contentRange = resp.Header.Get("Content-Range")
-		slash := strings.IndexRune(contentRange, '/')
-		if slash >= 0 {
-			i, err := strconv.ParseInt(contentRange[slash+1:], 10, 64)
-			if err == nil {
-				contentLength = &i
-			} else {
-				fs.Debugf(o, "Failed to find parse integer from in %q: %v", contentRange, err)
-			}
-		} else {
-			fs.Debugf(o, "Failed to find length in %q", contentRange)
-		}
+	contentLength := rest.ParseSizeFromHeaders(resp.Header)
+	if contentLength < 0 {
+		fs.Debugf(o, "Failed to parse file size from headers")
 	}
 
-	lastModified, err := time.Parse(time.RFC1123, resp.Header.Get("Last-Modified"))
+	lastModified, err := http.ParseTime(resp.Header.Get("Last-Modified"))
 	if err != nil {
 		fs.Debugf(o, "Failed to parse last modified from string %s, %v", resp.Header.Get("Last-Modified"), err)
 	}
@@ -4827,7 +4918,7 @@ func (o *Object) downloadFromURL(ctx context.Context, bucketPath string, options
 
 	var head = s3.HeadObjectOutput{
 		ETag:               header("Etag"),
-		ContentLength:      contentLength,
+		ContentLength:      &contentLength,
 		LastModified:       &lastModified,
 		Metadata:           metaData,
 		CacheControl:       header("Cache-Control"),
@@ -4939,7 +5030,7 @@ func (o *Object) Open(ctx context.Context, options ...fs.OpenOption) (in io.Read
 
 var warnStreamUpload sync.Once
 
-func (o *Object) uploadMultipart(ctx context.Context, req *s3.PutObjectInput, size int64, in io.Reader) (etag string, versionID *string, err error) {
+func (o *Object) uploadMultipart(ctx context.Context, req *s3.PutObjectInput, size int64, in io.Reader) (wantETag, gotETag string, versionID *string, err error) {
 	f := o.fs
 
 	// make concurrency machinery
@@ -4983,7 +5074,7 @@ func (o *Object) uploadMultipart(ctx context.Context, req *s3.PutObjectInput, si
 		return f.shouldRetry(ctx, err)
 	})
 	if err != nil {
-		return etag, nil, fmt.Errorf("multipart upload failed to initialise: %w", err)
+		return wantETag, gotETag, nil, fmt.Errorf("multipart upload failed to initialise: %w", err)
 	}
 	uid := cout.UploadId
 
@@ -5056,7 +5147,7 @@ func (o *Object) uploadMultipart(ctx context.Context, req *s3.PutObjectInput, si
 			finished = true
 		} else if err != nil {
 			free()
-			return etag, nil, fmt.Errorf("multipart upload failed to read source: %w", err)
+			return wantETag, gotETag, nil, fmt.Errorf("multipart upload failed to read source: %w", err)
 		}
 		buf = buf[:n]
 
@@ -5111,7 +5202,7 @@ func (o *Object) uploadMultipart(ctx context.Context, req *s3.PutObjectInput, si
 	}
 	err = g.Wait()
 	if err != nil {
-		return etag, nil, err
+		return wantETag, gotETag, nil, err
 	}
 
 	// sort the completed parts by part number
@@ -5133,14 +5224,17 @@ func (o *Object) uploadMultipart(ctx context.Context, req *s3.PutObjectInput, si
 		return f.shouldRetry(ctx, err)
 	})
 	if err != nil {
-		return etag, nil, fmt.Errorf("multipart upload failed to finalise: %w", err)
+		return wantETag, gotETag, nil, fmt.Errorf("multipart upload failed to finalise: %w", err)
 	}
 	hashOfHashes := md5.Sum(md5s)
-	etag = fmt.Sprintf("%s-%d", hex.EncodeToString(hashOfHashes[:]), len(parts))
+	wantETag = fmt.Sprintf("%s-%d", hex.EncodeToString(hashOfHashes[:]), len(parts))
 	if resp != nil {
+		if resp.ETag != nil {
+			gotETag = *resp.ETag
+		}
 		versionID = resp.VersionId
 	}
-	return etag, versionID, nil
+	return wantETag, gotETag, versionID, nil
 }
 
 // unWrapAwsError unwraps AWS errors, looking for a non AWS error
@@ -5173,7 +5267,7 @@ func (o *Object) uploadSinglepartPutObject(ctx context.Context, req *s3.PutObjec
 		// Can't upload zero length files like this for some reason
 		r.Body = bytes.NewReader([]byte{})
 	} else {
-		r.SetStreamingBody(ioutil.NopCloser(in))
+		r.SetStreamingBody(io.NopCloser(in))
 	}
 	r.SetContext(ctx)
 	r.HTTPRequest.Header.Set("X-Amz-Content-Sha256", "UNSIGNED-PAYLOAD")
@@ -5287,7 +5381,7 @@ func (o *Object) Update(ctx context.Context, in io.Reader, src fs.ObjectInfo, op
 
 	req := s3.PutObjectInput{
 		Bucket: &bucket,
-		ACL:    &o.fs.opt.ACL,
+		ACL:    stringPointerOrNil(o.fs.opt.ACL),
 		Key:    &bucketPath,
 	}
 
@@ -5440,52 +5534,58 @@ func (o *Object) Update(ctx context.Context, in io.Reader, src fs.ObjectInfo, op
 	}
 
 	var wantETag string        // Multipart upload Etag to check
-	var gotEtag string         // Etag we got from the upload
+	var gotETag string         // Etag we got from the upload
 	var lastModified time.Time // Time we got from the upload
 	var versionID *string      // versionID we got from the upload
 	if multipart {
-		wantETag, versionID, err = o.uploadMultipart(ctx, &req, size, in)
+		wantETag, gotETag, versionID, err = o.uploadMultipart(ctx, &req, size, in)
 	} else {
 		if o.fs.opt.UsePresignedRequest {
-			gotEtag, lastModified, versionID, err = o.uploadSinglepartPresignedRequest(ctx, &req, size, in)
+			gotETag, lastModified, versionID, err = o.uploadSinglepartPresignedRequest(ctx, &req, size, in)
 		} else {
-			gotEtag, lastModified, versionID, err = o.uploadSinglepartPutObject(ctx, &req, size, in)
+			gotETag, lastModified, versionID, err = o.uploadSinglepartPutObject(ctx, &req, size, in)
 		}
 	}
 	if err != nil {
 		return err
 	}
-	o.versionID = versionID
+	// Only record versionID if we are using --s3-versions or --s3-version-at
+	if o.fs.opt.Versions || o.fs.opt.VersionAt.IsSet() {
+		o.versionID = versionID
+	} else {
+		o.versionID = nil
+	}
 
 	// User requested we don't HEAD the object after uploading it
 	// so make up the object as best we can assuming it got
 	// uploaded properly. If size < 0 then we need to do the HEAD.
+	var head *s3.HeadObjectOutput
 	if o.fs.opt.NoHead && size >= 0 {
-		var head s3.HeadObjectOutput
-		//structs.SetFrom(&head, &req)
-		setFrom_s3HeadObjectOutput_s3PutObjectInput(&head, &req)
+		head = new(s3.HeadObjectOutput)
+		//structs.SetFrom(head, &req)
+		setFrom_s3HeadObjectOutput_s3PutObjectInput(head, &req)
 		head.ETag = &md5sumHex // doesn't matter quotes are missing
 		head.ContentLength = &size
-		// If we have done a single part PUT request then we can read these
-		if gotEtag != "" {
-			head.ETag = &gotEtag
+		// We get etag back from single and multipart upload so fill it in here
+		if gotETag != "" {
+			head.ETag = &gotETag
 		}
 		if lastModified.IsZero() {
 			lastModified = time.Now()
 		}
 		head.LastModified = &lastModified
 		head.VersionId = versionID
-		o.setMetaData(&head)
-		return nil
-	}
-
-	// Read the metadata from the newly created object
-	o.meta = nil // wipe old metadata
-	head, err := o.headObject(ctx)
-	if err != nil {
-		return err
+	} else {
+		// Read the metadata from the newly created object
+		o.meta = nil // wipe old metadata
+		head, err = o.headObject(ctx)
+		if err != nil {
+			return err
+		}
 	}
 	o.setMetaData(head)
+
+	// Check multipart upload ETag if required
 	if o.fs.opt.UseMultipartEtag.Value && !o.fs.etagIsNotMD5 && wantETag != "" && head.ETag != nil && *head.ETag != "" {
 		gotETag := strings.Trim(strings.ToLower(*head.ETag), `"`)
 		if wantETag != gotETag {

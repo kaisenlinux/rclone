@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"path"
@@ -215,7 +214,7 @@ func NewFs(ctx context.Context, name string, root string, config configmap.Mappe
 
 	client := fshttp.NewClient(ctx)
 	f.srv = rest.NewClient(client).SetRoot(apiBaseURL)
-	f.IDRegexp = regexp.MustCompile("https://uptobox.com/([a-zA-Z0-9]+)")
+	f.IDRegexp = regexp.MustCompile(`https://uptobox\.com/([a-zA-Z0-9]+)`)
 
 	_, err = f.readMetaDataForPath(ctx, f.dirPath(""), &api.MetadataRequestOptions{Limit: 10})
 	if err != nil {
@@ -239,7 +238,7 @@ func NewFs(ctx context.Context, name string, root string, config configmap.Mappe
 func (f *Fs) decodeError(resp *http.Response, response interface{}) (err error) {
 	defer fs.CheckClose(resp.Body, &err)
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return err
 	}

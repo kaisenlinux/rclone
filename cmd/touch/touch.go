@@ -52,7 +52,7 @@ unless ` + "`--no-create`" + ` or ` + "`--recursive`" + ` is provided.
 
 If ` + "`--recursive`" + ` is used then recursively sets the modification
 time on all existing files that is found under the path. Filters are supported,
-and you can test with the ` + "`--dry-run`" + ` or the ` + "`--interactive`" + ` flag.
+and you can test with the ` + "`--dry-run`" + ` or the ` + "`--interactive`/`-i`" + ` flag.
 
 If ` + "`--timestamp`" + ` is used then sets the modification time to that
 time instead of the current time. Times may be specified as one of:
@@ -64,6 +64,9 @@ time instead of the current time. Times may be specified as one of:
 Note that value of ` + "`--timestamp`" + ` is in UTC. If you want local time
 then add the ` + "`--localtime`" + ` flag.
 `,
+	Annotations: map[string]string{
+		"versionIntroduced": "v1.39",
+	},
 	Run: func(command *cobra.Command, args []string) {
 		cmd.CheckArgs(1, 1, command, args)
 		f, remote := newFsDst(args)

@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -124,8 +123,8 @@ routine so this flag shouldn't normally be used.`,
 			Help: `Don't check to see if the files change during upload.
 
 Normally rclone checks the size and modification time of files as they
-are being uploaded and aborts with a message which starts "can't copy
-- source file is being updated" if the file changes during upload.
+are being uploaded and aborts with a message which starts "can't copy -
+source file is being updated" if the file changes during upload.
 
 However on some file systems this modification time check may fail (e.g.
 [Glusterfs #2206](https://github.com/rclone/rclone/issues/2206)) so this
@@ -504,7 +503,7 @@ func (f *Fs) List(ctx context.Context, dir string) (entries fs.DirEntries, err e
 								continue
 							}
 						}
-						err = fmt.Errorf("failed to read directory %q: %w", namepath, err)
+						err = fmt.Errorf("failed to read directory %q: %w", namepath, fierr)
 						fs.Errorf(dir, "%v", fierr)
 						_ = accounting.Stats(ctx).Error(fserrors.NoRetryError(fierr)) // fail the sync
 						continue
@@ -525,6 +524,10 @@ func (f *Fs) List(ctx context.Context, dir string) (entries fs.DirEntries, err e
 			if f.opt.FollowSymlinks && (mode&os.ModeSymlink) != 0 {
 				localPath := filepath.Join(fsDirPath, name)
 				fi, err = os.Stat(localPath)
+				// Quietly skip errors on excluded files and directories
+				if err != nil && useFilter && !filter.IncludeRemote(newRemote) {
+					continue
+				}
 				if os.IsNotExist(err) || isCircularSymlinkError(err) {
 					// Skip bad symlinks and circular symlinks
 					err = fserrors.NoRetryError(fmt.Errorf("symlink: %w", err))
@@ -646,7 +649,7 @@ func (f *Fs) readPrecision() (precision time.Duration) {
 	precision = time.Second
 
 	// Create temporary file and test it
-	fd, err := ioutil.TempFile("", "rclone")
+	fd, err := os.CreateTemp("", "rclone")
 	if err != nil {
 		// If failed return 1s
 		// fmt.Println("Failed to create temp file", err)
@@ -1073,7 +1076,7 @@ func (o *Object) openTranslatedLink(offset, limit int64) (lrc io.ReadCloser, err
 	if err != nil {
 		return nil, err
 	}
-	return readers.NewLimitedReadCloser(ioutil.NopCloser(strings.NewReader(linkdst[offset:])), limit), nil
+	return readers.NewLimitedReadCloser(io.NopCloser(strings.NewReader(linkdst[offset:])), limit), nil
 }
 
 // Open an object for read

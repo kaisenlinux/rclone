@@ -19,8 +19,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
+	"os"
 	"path"
 	"strconv"
 	"strings"
@@ -82,7 +82,8 @@ func init() {
 			saFile, _ := m.Get("service_account_file")
 			saCreds, _ := m.Get("service_account_credentials")
 			anonymous, _ := m.Get("anonymous")
-			if saFile != "" || saCreds != "" || anonymous == "true" {
+			envAuth, _ := m.Get("env_auth")
+			if saFile != "" || saCreds != "" || anonymous == "true" || envAuth == "true" {
 				return nil, nil
 			}
 			return oauthutil.ConfigOut("", &oauthutil.Options{
@@ -330,6 +331,17 @@ can't check the size and hash but the file contents will be decompressed.
 			Default: (encoder.Base |
 				encoder.EncodeCrLf |
 				encoder.EncodeInvalidUtf8),
+		}, {
+			Name:    "env_auth",
+			Help:    "Get GCP IAM credentials from runtime (environment variables or instance meta data if no env vars).\n\nOnly applies if service_account_file and service_account_credentials is blank.",
+			Default: false,
+			Examples: []fs.OptionExample{{
+				Value: "false",
+				Help:  "Enter credentials in the next step.",
+			}, {
+				Value: "true",
+				Help:  "Get GCP IAM credentials from the environment (env vars or IAM).",
+			}},
 		}}...),
 	})
 }
@@ -349,6 +361,7 @@ type Options struct {
 	Decompress                bool                 `config:"decompress"`
 	Endpoint                  string               `config:"endpoint"`
 	Enc                       encoder.MultiEncoder `config:"encoding"`
+	EnvAuth                   bool                 `config:"env_auth"`
 }
 
 // Fs represents a remote storage server
@@ -487,7 +500,7 @@ func NewFs(ctx context.Context, name, root string, m configmap.Mapper) (fs.Fs, e
 
 	// try loading service account credentials from env variable, then from a file
 	if opt.ServiceAccountCredentials == "" && opt.ServiceAccountFile != "" {
-		loadedCreds, err := ioutil.ReadFile(env.ShellExpand(opt.ServiceAccountFile))
+		loadedCreds, err := os.ReadFile(env.ShellExpand(opt.ServiceAccountFile))
 		if err != nil {
 			return nil, fmt.Errorf("error opening service account credentials file: %w", err)
 		}
@@ -499,6 +512,11 @@ func NewFs(ctx context.Context, name, root string, m configmap.Mapper) (fs.Fs, e
 		oAuthClient, err = getServiceAccountClient(ctx, []byte(opt.ServiceAccountCredentials))
 		if err != nil {
 			return nil, fmt.Errorf("failed configuring Google Cloud Storage Service Account: %w", err)
+		}
+	} else if opt.EnvAuth {
+		oAuthClient, err = google.DefaultClient(ctx, storage.DevstorageFullControlScope)
+		if err != nil {
+			return nil, fmt.Errorf("failed to configure Google Cloud Storage: %w", err)
 		}
 	} else {
 		oAuthClient, _, err = oauthutil.NewClient(ctx, name, m, storageConfig)

@@ -1,9 +1,10 @@
 ---
 title: "Swift"
 description: "Swift"
+versionIntroduced: "v0.91"
 ---
 
-# {{< icon "fa fa-space-shuttle" >}}Swift
+# {{< icon "fa fa-space-shuttle" >}} Swift
 
 Swift refers to [OpenStack Object Storage](https://docs.openstack.org/swift/latest/).
 Commercial implementations of that being:
@@ -133,7 +134,7 @@ List the contents of a container
 Sync `/home/local/directory` to the remote container, deleting any
 excess files in the container.
 
-    rclone sync -i /home/local/directory remote:container
+    rclone sync --interactive /home/local/directory remote:container
 
 ### Configuration from an OpenStack credentials file
 

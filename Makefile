@@ -23,7 +23,7 @@ ifeq ($(subst HEAD,,$(subst master,,$(BRANCH))),)
 	BRANCH_PATH :=
 endif
 # Make version suffix -beta.NNNN.CCCCCCCC (N=Commit number, C=Commit)
-VERSION_SUFFIX := -beta.$(shell git rev-list --count HEAD).$(shell git show --no-patch --no-notes --pretty='%h' HEAD)
+#VERSION_SUFFIX := -beta.$(shell git rev-list --count HEAD).$(shell git show --no-patch --no-notes --pretty='%h' HEAD)
 # TAG is current version + commit number + commit + branch
 TAG := $(VERSION)$(VERSION_SUFFIX)$(TAG_BRANCH)
 ifdef RELEASE_TAG
@@ -80,6 +80,9 @@ quicktest:
 
 racequicktest:
 	RCLONE_CONFIG="/notfound" go test $(BUILDTAGS) -cpu=2 -race ./...
+
+compiletest:
+	RCLONE_CONFIG="/notfound" go test $(BUILDTAGS) -run XXX ./...
 
 # Do source code quality checks
 check:	rclone
