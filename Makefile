@@ -23,7 +23,7 @@ ifeq ($(subst HEAD,,$(subst master,,$(BRANCH))),)
 	BRANCH_PATH :=
 endif
 # Make version suffix -beta.NNNN.CCCCCCCC (N=Commit number, C=Commit)
-#VERSION_SUFFIX := -beta.$(shell git rev-list --count HEAD).$(shell git show --no-patch --no-notes --pretty='%h' HEAD)
+VERSION_SUFFIX := -beta.$(shell git rev-list --count HEAD).$(shell git show --no-patch --no-notes --pretty='%h' HEAD)
 # TAG is current version + commit number + commit + branch
 TAG := $(VERSION)$(VERSION_SUFFIX)$(TAG_BRANCH)
 ifdef RELEASE_TAG
@@ -96,7 +96,7 @@ build_dep:
 
 # Get the release dependencies we only install on linux
 release_dep_linux:
-	go run bin/get-github-release.go -extract nfpm goreleaser/nfpm 'nfpm_.*_Linux_x86_64\.tar\.gz'
+	go install github.com/goreleaser/nfpm/v2/cmd/nfpm@latest
 
 # Get the release dependencies we only install on Windows
 release_dep_windows:

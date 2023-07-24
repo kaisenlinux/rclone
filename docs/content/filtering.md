@@ -166,7 +166,7 @@ Which will match a directory called `start` with a file called
 `end.jpg` in it as the `.*` will match `/` characters.
 
 Note that you can use `-vv --dump filters` to show the filter patterns
-in regexp format - rclone implements the glob patters by transforming
+in regexp format - rclone implements the glob patterns by transforming
 them into regular expressions.
 
 ## Filter pattern examples {#examples}
@@ -367,7 +367,7 @@ all files on `remote:` excluding those in root directory `dir` and sub
 directories.
 
 E.g. on Microsoft Windows `rclone ls remote: --exclude "*\[{JP,KR,HK}\]*"`
-lists the files in `remote:` with `[JP]` or `[KR]` or `[HK]` in
+lists the files in `remote:` without `[JP]` or `[KR]` or `[HK]` in
 their name. Quotes prevent the shell from interpreting the `\`
 characters.`\` characters escape the `[` and `]` so an rclone filter
 treats them literally rather than as a character-range. The `{` and `}`
