@@ -11,7 +11,7 @@ Rules-Requires-Root: no
 
 Package: rclone
 Architecture: amd64 arm64 i386
-Depends: ${shlibs:Depends}, ${misc:Depends}, golang-go (>= 1.18)
+Depends: ${shlibs:Depends}, ${misc:Depends}
 Suggests: restic
 Description: Rclone - "rsync for cloud storage"
    is a command-line program to sync files and directories to and
