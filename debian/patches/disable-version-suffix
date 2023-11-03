@@ -1,7 +1,7 @@
 Author: Kevin Chevreuil - Kaisen <kaisen@kaisenlinux.org>
 
---- rclone-1.63.1.orig/Makefile
-+++ rclone-1.63.1/Makefile
+--- rclone-1.64.2.orig/Makefile
++++ rclone-1.64.2/Makefile
 @@ -23,7 +23,7 @@ ifeq ($(subst HEAD,,$(subst master,,$(BR
  	BRANCH_PATH :=
  endif

@@ -22,6 +22,9 @@ run `rclone -h`.
 Already installed rclone can be easily updated to the latest version
 using the [rclone selfupdate](/commands/rclone_selfupdate/) command.
 
+See [the release signing docs](/release_signing/) for how to verify
+signatures on the release.
+
 ## Script installation
 
 To install rclone on Linux/macOS/BSD systems, run:
@@ -76,6 +79,19 @@ Note that this is a third party installer not controlled by the rclone
 developers so it may be out of date. Its current version is as below.
 
 [![Homebrew package](https://repology.org/badge/version-for-repo/homebrew/rclone.svg)](https://repology.org/project/rclone/versions)
+
+### Installation with MacPorts (#macos-macports)
+
+On macOS, rclone can also be installed via [MacPorts](https://www.macports.org):
+
+    sudo port install rclone
+
+Note that this is a third party installer not controlled by the rclone
+developers so it may be out of date. Its current version is as below.
+
+[![MacPorts port](https://repology.org/badge/version-for-repo/macports/rclone.svg)](https://repology.org/project/rclone/versions)
+
+More information [here](https://ports.macports.org/port/rclone/).
 
 ### Precompiled binary, using curl {#macos-precompiled}
 
@@ -290,6 +306,28 @@ docker run --rm \
 ls ~/data/mount
 kill %1
 ```
+## Snap installation {#snap}
+
+[![Get it from the Snap Store](https://snapcraft.io/static/images/badges/en/snap-store-black.svg)](https://snapcraft.io/rclone)
+
+Make sure you have [Snapd installed](https://snapcraft.io/docs/installing-snapd)
+
+```bash
+$ sudo snap install rclone
+```
+Due to the strict confinement of Snap, rclone snap cannot access real /home/$USER/.config/rclone directory, default config path is as below.
+
+- Default config directory:
+    - /home/$USER/snap/rclone/current/.config/rclone
+
+Note: Due to the strict confinement of Snap, `rclone mount` feature is `not` supported.
+
+If mounting is wanted, either install a precompiled binary or enable the relevant option when [installing from source](#source).
+
+Note that this is controlled by [community maintainer](https://github.com/boukendesho/rclone-snap) not the rclone developers so it may be out of date. Its current version is as below.
+
+[![rclone](https://snapcraft.io/rclone/badge.svg)](https://snapcraft.io/rclone)
+
 
 ## Source installation {#source}
 
@@ -547,7 +585,7 @@ It requires .NET Framework, but it is preinstalled on newer versions of Windows,
 also provides alternative standalone distributions which includes necessary runtime (.NET 5).
 WinSW is a command-line only utility, where you have to manually create an XML file with
 service configuration. This may be a drawback for some, but it can also be an advantage
-as it is easy to back up and re-use the configuration
+as it is easy to back up and reuse the configuration
 settings, without having go through manual steps in a GUI. One thing to note is that
 by default it does not restart the service on error, one have to explicit enable this
 in the configuration file (via the "onfailure" parameter).

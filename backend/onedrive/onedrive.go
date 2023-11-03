@@ -131,10 +131,11 @@ Note that the chunks will be buffered into memory.`,
 			Default:  defaultChunkSize,
 			Advanced: true,
 		}, {
-			Name:     "drive_id",
-			Help:     "The ID of the drive to use.",
-			Default:  "",
-			Advanced: true,
+			Name:      "drive_id",
+			Help:      "The ID of the drive to use.",
+			Default:   "",
+			Advanced:  true,
+			Sensitive: true,
 		}, {
 			Name:     "drive_type",
 			Help:     "The type of the drive (" + driveTypePersonal + " | " + driveTypeBusiness + " | " + driveTypeSharepoint + ").",
@@ -148,7 +149,8 @@ This isn't normally needed, but in special circumstances you might
 know the folder ID that you wish to access but not be able to get
 there through a path traversal.
 `,
-			Advanced: true,
+			Advanced:  true,
+			Sensitive: true,
 		}, {
 			Name: "access_scopes",
 			Help: `Set scopes to be requested by rclone.
@@ -260,7 +262,8 @@ this flag there.
 
 At the time of writing this only works with OneDrive personal paid accounts.
 `,
-			Advanced: true,
+			Advanced:  true,
+			Sensitive: true,
 		}, {
 			Name:    "hash_type",
 			Default: "auto",
@@ -569,15 +572,18 @@ func Config(ctx context.Context, name string, m configmap.Mapper, config fs.Conf
 	case "url":
 		return fs.ConfigInput("url_end", "config_site_url", `Site URL
 
-Example: "https://contoso.sharepoint.com/sites/mysite" or "mysite"
+Examples:
+- "mysite"
+- "https://XXX.sharepoint.com/sites/mysite"
+- "https://XXX.sharepoint.com/teams/ID"
 `)
 	case "url_end":
 		siteURL := config.Result
-		re := regexp.MustCompile(`https://.*\.sharepoint\.com/sites/(.*)`)
+		re := regexp.MustCompile(`https://.*\.sharepoint\.com(/.*)`)
 		match := re.FindStringSubmatch(siteURL)
 		if len(match) == 2 {
 			return chooseDrive(ctx, name, m, srv, chooseDriveOpt{
-				relativePath: "/sites/" + match[1],
+				relativePath: match[1],
 			})
 		}
 		return chooseDrive(ctx, name, m, srv, chooseDriveOpt{

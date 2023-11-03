@@ -4,7 +4,7 @@ export GOPATH=$(CURDIR)/_build
 export GOBIN=$(CURDIR)/_build/bin
 
 %:
-	dh $@ --buildsystem=golang
+	dh $@ --buildsystem=golang --builddirectory=_build
 
 override_dh_auto_clean:
 	rm -rf $(CURDIR)/_build/ $(CURDIR)/obj-x86_64-linux-gnu

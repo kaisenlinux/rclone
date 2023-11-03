@@ -15,6 +15,7 @@ import (
 	"github.com/rclone/rclone/fs/operations"
 	"github.com/rclone/rclone/fs/rc"
 	"github.com/rclone/rclone/fstest"
+	"github.com/rclone/rclone/lib/diskusage"
 	"github.com/rclone/rclone/lib/rest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -306,6 +307,61 @@ func TestRcStat(t *testing.T) {
 	})
 }
 
+// operations/settier: Set the storage tier of a fs
+func TestRcSetTier(t *testing.T) {
+	ctx := context.Background()
+	r, call := rcNewRun(t, "operations/settier")
+	if !r.Fremote.Features().SetTier {
+		t.Skip("settier not supported")
+	}
+	file1 := r.WriteObject(context.Background(), "file1", "file1 contents", t1)
+	r.CheckRemoteItems(t, file1)
+
+	// Because we don't know what the current tier options here are, let's
+	// just get the current tier, and reuse that
+	o, err := r.Fremote.NewObject(ctx, file1.Path)
+	require.NoError(t, err)
+	trr, ok := o.(fs.GetTierer)
+	require.True(t, ok)
+	ctier := trr.GetTier()
+	in := rc.Params{
+		"fs":   r.FremoteName,
+		"tier": ctier,
+	}
+	out, err := call.Fn(context.Background(), in)
+	require.NoError(t, err)
+	assert.Equal(t, rc.Params(nil), out)
+
+}
+
+// operations/settier: Set the storage tier of a file
+func TestRcSetTierFile(t *testing.T) {
+	ctx := context.Background()
+	r, call := rcNewRun(t, "operations/settierfile")
+	if !r.Fremote.Features().SetTier {
+		t.Skip("settier not supported")
+	}
+	file1 := r.WriteObject(context.Background(), "file1", "file1 contents", t1)
+	r.CheckRemoteItems(t, file1)
+
+	// Because we don't know what the current tier options here are, let's
+	// just get the current tier, and reuse that
+	o, err := r.Fremote.NewObject(ctx, file1.Path)
+	require.NoError(t, err)
+	trr, ok := o.(fs.GetTierer)
+	require.True(t, ok)
+	ctier := trr.GetTier()
+	in := rc.Params{
+		"fs":     r.FremoteName,
+		"remote": "file1",
+		"tier":   ctier,
+	}
+	out, err := call.Fn(context.Background(), in)
+	require.NoError(t, err)
+	assert.Equal(t, rc.Params(nil), out)
+
+}
+
 // operations/mkdir: Make a destination directory or container
 func TestRcMkdir(t *testing.T) {
 	ctx := context.Background()
@@ -488,7 +544,7 @@ func TestUploadFile(t *testing.T) {
 	r, call := rcNewRun(t, "operations/uploadfile")
 	ctx := context.Background()
 
-	testFileName := "test.txt"
+	testFileName := "uploadfile-test.txt"
 	testFileContent := "Hello World"
 	r.WriteFile(testFileName, testFileContent, t1)
 	testItem1 := fstest.NewItem(testFileName, testFileContent, t1)
@@ -496,6 +552,10 @@ func TestUploadFile(t *testing.T) {
 
 	currentFile, err := os.Open(path.Join(r.LocalName, testFileName))
 	require.NoError(t, err)
+
+	defer func() {
+		assert.NoError(t, currentFile.Close())
+	}()
 
 	formReader, contentType, _, err := rest.MultipartUpload(ctx, currentFile, url.Values{}, "file", testFileName)
 	require.NoError(t, err)
@@ -516,10 +576,14 @@ func TestUploadFile(t *testing.T) {
 
 	assert.NoError(t, r.Fremote.Mkdir(context.Background(), "subdir"))
 
-	currentFile, err = os.Open(path.Join(r.LocalName, testFileName))
+	currentFile2, err := os.Open(path.Join(r.LocalName, testFileName))
 	require.NoError(t, err)
 
-	formReader, contentType, _, err = rest.MultipartUpload(ctx, currentFile, url.Values{}, "file", testFileName)
+	defer func() {
+		assert.NoError(t, currentFile2.Close())
+	}()
+
+	formReader, contentType, _, err = rest.MultipartUpload(ctx, currentFile2, url.Values{}, "file", testFileName)
 	require.NoError(t, err)
 
 	httpReq = httptest.NewRequest("POST", "/", formReader)
@@ -576,4 +640,21 @@ func TestRcCommand(t *testing.T) {
 	_, err = call.Fn(context.Background(), in)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), errTxt)
+}
+
+// operations/command: Runs a backend command
+func TestRcDu(t *testing.T) {
+	ctx := context.Background()
+	_, call := rcNewRun(t, "core/du")
+	in := rc.Params{}
+	out, err := call.Fn(ctx, in)
+	if err == diskusage.ErrUnsupported {
+		t.Skip(err)
+	}
+	assert.NotEqual(t, "", out["dir"])
+	info := out["info"].(diskusage.Info)
+	assert.True(t, info.Total != 0)
+	assert.True(t, info.Total > info.Free)
+	assert.True(t, info.Total > info.Available)
+	assert.True(t, info.Free >= info.Available)
 }
