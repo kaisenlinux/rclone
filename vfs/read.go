@@ -79,7 +79,7 @@ func (fh *ReadFileHandle) openPending() (err error) {
 	if err != nil {
 		return err
 	}
-	tr := accounting.GlobalStats().NewTransfer(o)
+	tr := accounting.GlobalStats().NewTransfer(o, nil)
 	fh.done = tr.Done
 	fh.r = tr.Account(context.TODO(), r).WithBuffer() // account the transfer
 	fh.opened = true
@@ -482,6 +482,11 @@ func (fh *ReadFileHandle) Release() error {
 		// fs.Debugf(fh.remote, "ReadFileHandle.Release OK")
 	}
 	return err
+}
+
+// Name returns the name of the file from the underlying Object.
+func (fh *ReadFileHandle) Name() string {
+	return fh.file.String()
 }
 
 // Size returns the size of the underlying file

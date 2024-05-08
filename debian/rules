@@ -11,7 +11,6 @@ override_dh_auto_clean:
 
 override_dh_auto_build:
 	make version
-	make doc
 	make rclone
 
 override_dh_auto_test:
@@ -20,5 +19,5 @@ override_dh_auto_test:
 override_dh_auto_install:
 	install -p -m 0755 $(CURDIR)/rclone $(CURDIR)/debian/rclone/usr/bin/
 	install -p -m 0644 $(CURDIR)/debian/rclone.png $(CURDIR)/debian/rclone/usr/share/pixmaps/
-	$(CURDIR)/rclone completion bash > $(CURDIR)/debian/rclone/usr/share/bash-completion/completions/rclone
-	$(CURDIR)/rclone completion zsh > $(CURDIR)/debian/rclone/usr/share/zsh/vendor-completions/_rclone
+	$(CURDIR)/debian/rclone/usr/bin/rclone completion bash > $(CURDIR)/debian/rclone/usr/share/bash-completion/completions/rclone
+	$(CURDIR)/debian/rclone/usr/bin/rclone completion zsh > $(CURDIR)/debian/rclone/usr/share/zsh/vendor-completions/_rclone

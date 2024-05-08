@@ -25,7 +25,7 @@ import (
 
 func init() {
 	name := "cmount"
-	cmountOnly := ProvidedBy(runtime.GOOS)
+	cmountOnly := runtime.GOOS != "linux" // rclone mount only works for linux
 	if cmountOnly {
 		name = "mount"
 	}
@@ -115,13 +115,6 @@ func mountOptions(VFS *vfs.VFS, device string, mountpoint string, opt *mountlib.
 	}
 	for _, option := range opt.ExtraFlags {
 		options = append(options, option)
-	}
-	if runtime.GOOS == "darwin" {
-		if !findOption("modules=iconv", options) {
-			iconv := "modules=iconv,from_code=UTF-8,to_code=UTF-8-MAC"
-			options = append(options, "-o", iconv)
-			fs.Debugf(nil, "Adding \"-o %s\" for macOS", iconv)
-		}
 	}
 	return options
 }
