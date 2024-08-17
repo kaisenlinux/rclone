@@ -2,15 +2,15 @@ Source: rclone
 Section: net
 Priority: optional
 Maintainer: Kevin Chevreuil - Kaisen <kaisen@kaisenlinux.org>
-Build-Depends: debhelper-compat (= 13), golang-go (>= 1.18), dh-golang, pandoc
-Standards-Version: 4.6.0
+Build-Depends: debhelper-compat (= 13), golang-go (>= 1.20), dh-golang, pandoc
+Standards-Version: 4.7.2
 Homepage: https://rclone.org/
 Vcs-Browser: https://gitlab.com/kaisenlinux/packages/rclone
 Vcs-Git: https://gitlab.com/kaisenlinux/packages/rclone.git
 Rules-Requires-Root: no
 
 Package: rclone
-Architecture: amd64 arm64 i386
+Architecture: amd64 arm64
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Suggests: restic
 Description: Rclone - "rsync for cloud storage"
