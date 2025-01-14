@@ -2,8 +2,8 @@ Source: rclone
 Section: net
 Priority: optional
 Maintainer: Kevin Chevreuil - Kaisen <kaisen@kaisenlinux.org>
-Build-Depends: debhelper-compat (= 13), golang-go (>= 1.20), dh-golang, pandoc
-Standards-Version: 4.7.2
+Build-Depends: debhelper-compat (= 13), golang-go (>= 1.21), dh-golang, pandoc
+Standards-Version: 4.7.0
 Homepage: https://rclone.org/
 Vcs-Browser: https://gitlab.com/kaisenlinux/packages/rclone
 Vcs-Git: https://gitlab.com/kaisenlinux/packages/rclone.git

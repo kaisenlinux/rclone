@@ -44,12 +44,13 @@ Remote config
 Please visit:
 https://www.dropbox.com/1/oauth2/authorize?client_id=XXXXXXXXXXXXXXX&response_type=code
 Enter the code: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX_XXXXXXXXXX
---------------------
-[remote]
-app_key =
-app_secret =
-token = XXXXXXXXXXXXXXXXXXXXXXXXXXXXX_XXXX_XXXXXXXXXXXXXXXXXXXXXXXXXXXXX
---------------------
+Configuration complete.
+Options:
+- type: dropbox
+- app_key:
+- app_secret:
+- token: XXXXXXXXXXXXXXXXXXXXXXXXXXXXX_XXXX_XXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+Keep this "remote" remote?
 y) Yes this is OK
 e) Edit this remote
 d) Delete this remote
@@ -262,6 +263,19 @@ Properties:
 - Type:        string
 - Required:    false
 
+#### --dropbox-client-credentials
+
+Use client credentials OAuth flow.
+
+This will use the OAUTH2 client Credentials Flow as described in RFC 6749.
+
+Properties:
+
+- Config:      client_credentials
+- Env Var:     RCLONE_DROPBOX_CLIENT_CREDENTIALS
+- Type:        bool
+- Default:     false
+
 #### --dropbox-chunk-size
 
 Upload chunk size (< 150Mi).
@@ -412,7 +426,7 @@ Max number of files in upload batch.
 
 This sets the batch size of files to upload. It has to be less than 1000.
 
-By default this is 0 which means rclone which calculate the batch size
+By default this is 0 which means rclone will calculate the batch size
 depending on the setting of batch_mode.
 
 - batch_mode: async - default batch_size is 100

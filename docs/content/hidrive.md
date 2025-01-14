@@ -54,11 +54,11 @@ If your browser doesn't open automatically go to the following link: http://127.
 Log in and authorize rclone for access
 Waiting for code...
 Got code
---------------------
-[remote]
-type = hidrive
-token = {"access_token":"xxxxxxxxxxxxxxxxxxxx","token_type":"Bearer","refresh_token":"xxxxxxxxxxxxxxxxxxxxxxx","expiry":"xxxxxxxxxxxxxxxxxxxxxxx"}
---------------------
+Configuration complete.
+Options:
+- type: hidrive
+- token: {"access_token":"xxxxxxxxxxxxxxxxxxxx","token_type":"Bearer","refresh_token":"xxxxxxxxxxxxxxxxxxxxxxx","expiry":"xxxxxxxxxxxxxxxxxxxxxxx"}
+Keep this "remote" remote?
 y) Yes this is OK (default)
 e) Edit this remote
 d) Delete this remote
@@ -281,6 +281,19 @@ Properties:
 - Env Var:     RCLONE_HIDRIVE_TOKEN_URL
 - Type:        string
 - Required:    false
+
+#### --hidrive-client-credentials
+
+Use client credentials OAuth flow.
+
+This will use the OAUTH2 client Credentials Flow as described in RFC 6749.
+
+Properties:
+
+- Config:      client_credentials
+- Env Var:     RCLONE_HIDRIVE_CLIENT_CREDENTIALS
+- Type:        bool
+- Default:     false
 
 #### --hidrive-scope-role
 

@@ -90,13 +90,13 @@ y) Yes
 n) No
 y/n> n
 Remote config
---------------------
-[remote]
-type = mailru
-user = username@mail.ru
-pass = *** ENCRYPTED ***
-speedup_enable = true
---------------------
+Configuration complete.
+Options:
+- type: mailru
+- user: username@mail.ru
+- pass: *** ENCRYPTED ***
+- speedup_enable: true
+Keep this "remote" remote?
 y) Yes this is OK
 e) Edit this remote
 d) Delete this remote
@@ -292,6 +292,19 @@ Properties:
 - Env Var:     RCLONE_MAILRU_TOKEN_URL
 - Type:        string
 - Required:    false
+
+#### --mailru-client-credentials
+
+Use client credentials OAuth flow.
+
+This will use the OAUTH2 client Credentials Flow as described in RFC 6749.
+
+Properties:
+
+- Config:      client_credentials
+- Env Var:     RCLONE_MAILRU_CLIENT_CREDENTIALS
+- Type:        bool
+- Default:     false
 
 #### --mailru-speedup-file-patterns
 
