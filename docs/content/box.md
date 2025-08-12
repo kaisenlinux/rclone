@@ -87,7 +87,7 @@ machine with no Internet browser available.
 Note that rclone runs a webserver on your local machine to collect the
 token as returned from Box. This only runs from the moment it opens
 your browser to the moment you get back the verification code.  This
-is on `http://127.0.0.1:53682/` and this it may require you to unblock
+is on `http://127.0.0.1:53682/` and this may require you to unblock
 it temporarily if you are running a host firewall.
 
 Once configured you can then use `rclone` like this,
@@ -389,6 +389,8 @@ Properties:
 Use client credentials OAuth flow.
 
 This will use the OAUTH2 client Credentials Flow as described in RFC 6749.
+
+Note that this option is NOT supported by all backends.
 
 Properties:
 

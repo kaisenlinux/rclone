@@ -467,6 +467,11 @@ func (f *Fs) shouldRetry(ctx context.Context, resp *http.Response, err error) (b
 			// when a zero-byte file was uploaded with an invalid captcha token
 			f.rst.captcha.Invalidate()
 			return true, err
+		} else if strings.Contains(apiErr.Reason, "idx.shub.mypikpak.com") && apiErr.Code == 500 {
+			// internal server error: Post "http://idx.shub.mypikpak.com": context deadline exceeded (Client.Timeout exceeded while awaiting headers)
+			// This typically happens when trying to retrieve a gcid for which no record exists.
+			// No retry is needed in this case.
+			return false, err
 		}
 	}
 
@@ -1232,7 +1237,7 @@ func (f *Fs) uploadByForm(ctx context.Context, in io.Reader, name string, size i
 	params := url.Values{}
 	iVal := reflect.ValueOf(&form.MultiParts).Elem()
 	iTyp := iVal.Type()
-	for i := 0; i < iVal.NumField(); i++ {
+	for i := range iVal.NumField() {
 		params.Set(iTyp.Field(i).Tag.Get("json"), iVal.Field(i).String())
 	}
 	formReader, contentType, overhead, err := rest.MultipartUpload(ctx, in, params, "file", name)
@@ -1520,7 +1525,7 @@ Result:
 // The result should be capable of being JSON encoded
 // If it is a string or a []string it will be shown to the user
 // otherwise it will be JSON encoded and shown to the user like that
-func (f *Fs) Command(ctx context.Context, name string, arg []string, opt map[string]string) (out interface{}, err error) {
+func (f *Fs) Command(ctx context.Context, name string, arg []string, opt map[string]string) (out any, err error) {
 	switch name {
 	case "addurl":
 		if len(arg) != 1 {

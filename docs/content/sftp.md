@@ -1065,6 +1065,20 @@ Properties:
 - Type:        string
 - Required:    false
 
+#### --sftp-http-proxy
+
+URL for HTTP CONNECT proxy
+
+Set this to a URL for an HTTP proxy which supports the HTTP CONNECT verb.
+
+
+Properties:
+
+- Config:      http_proxy
+- Env Var:     RCLONE_SFTP_HTTP_PROXY
+- Type:        string
+- Required:    false
+
 #### --sftp-copy-is-hardlink
 
 Set to enable server side copies using hardlinks.
@@ -1108,7 +1122,8 @@ Properties:
 
 On some SFTP servers (e.g. Synology) the paths are different
 for SSH and SFTP so the hashes can't be calculated properly.
-For them using `disable_hashcheck` is a good idea.
+You can either use [`--sftp-path-override`](#--sftp-path-override)
+or [`disable_hashcheck`](#--sftp-disable-hashcheck).
 
 The only ssh agent supported under Windows is Putty's pageant.
 

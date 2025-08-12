@@ -108,7 +108,7 @@ func (conf *Config) MakeOauth2Config() *oauth2.Config {
 	return &oauth2.Config{
 		ClientID:     conf.ClientID,
 		ClientSecret: conf.ClientSecret,
-		RedirectURL:  RedirectLocalhostURL,
+		RedirectURL:  conf.RedirectURL,
 		Scopes:       conf.Scopes,
 		Endpoint: oauth2.Endpoint{
 			AuthURL:   conf.AuthURL,
@@ -155,7 +155,7 @@ var SharedOptions = []fs.Option{{
 }, {
 	Name:     config.ConfigClientCredentials,
 	Default:  false,
-	Help:     "Use client credentials OAuth flow.\n\nThis will use the OAUTH2 client Credentials Flow as described in RFC 6749.",
+	Help:     "Use client credentials OAuth flow.\n\nThis will use the OAUTH2 client Credentials Flow as described in RFC 6749.\n\nNote that this option is NOT supported by all backends.",
 	Advanced: true,
 }}
 
